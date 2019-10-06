@@ -1,0 +1,90 @@
+{
+  "draws": [
+    { "id" : 1, "label": "1", "starts_at": "2019-09-01T19:00" },
+    { "id" : 2, "label": "2", "starts_at": "2019-09-08T19:00" },
+    { "id" : 3, "label": "3", "starts_at": "2019-09-15T19:00" },
+    { "id" : 4, "label": "4", "starts_at": "2019-09-22T19:00" }
+  ],
+  "games": [
+    {
+      "id": 1,
+      "draw_id": 1,
+      "sheet": 1,
+      "name": "A vs B",
+      "game_positions": [
+        {
+          "id": 1,
+          "team_name": "Team A",
+          "score": 6,
+          "result": "won"
+        },
+        {
+          "id": 2,
+          "team_name": "Team B",
+          "score": 2,
+          "result": "lost"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "draw_id": 1,
+      "sheet": 2,
+      "name": "C vs D",
+      "game_positions": [
+        {
+          "id": 3,
+          "team_name": "Team C",
+          "score": 0,
+          "result": "lost"
+        },
+        {
+          "id": 4,
+          "team_name": "Team D",
+          "score": 2,
+          "result": "won"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "draw_id": 1,
+      "sheet": 3,
+      "name": "E vs F",
+      "game_positions": [
+        {
+          "id": 5,
+          "team_name": "Team E",
+          "score": 2,
+          "result": "lost"
+        },
+        {
+          "id": 8,
+          "team_name": "Team F",
+          "score": 2,
+          "result": "won"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "draw_id": 1,
+      "sheet": 4,
+      "name": "G vs H",
+      "game_positions": [
+        {
+          "id": 7,
+          "team_name": "Team G",
+          "score": 3,
+          "result": "won"
+        },
+        {
+          "id": 8,
+          "team_name": "Team H",
+          "score": 2,
+          "result": "lost"
+        }
+      ]
+    }
+  ]
+}

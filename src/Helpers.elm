@@ -1,0 +1,16 @@
+module Helpers exposing (..)
+
+import List.Extra
+import RemoteData exposing (RemoteData(..))
+import RemoteData.Http
+import Types exposing (..)
+
+
+getData : String -> Cmd Msg
+getData url =
+    RemoteData.Http.get url GotData dataDecoder
+
+
+patchGame : String -> Game -> Cmd Msg
+patchGame url game =
+    RemoteData.Http.patch url PatchedGame gameDecoder (encodeGame game)
