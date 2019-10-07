@@ -14,3 +14,8 @@ getData url =
 patchGame : String -> Game -> Cmd Msg
 patchGame url game =
     RemoteData.Http.patch url PatchedGame gameDecoder (encodeGame game)
+
+
+findGame : List Game -> Int -> Int -> Maybe Game
+findGame games drawId sheet =
+    List.Extra.find (\game -> game.drawId == drawId && game.sheet == sheet) games

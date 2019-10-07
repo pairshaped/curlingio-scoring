@@ -46,10 +46,63 @@ view model =
 viewNotReady : String -> Html Msg
 viewNotReady message =
     div
-        [ class "mt-3" ]
+        [ class "m-3" ]
         [ text message ]
 
 
 viewData : Model -> Data -> Html Msg
 viewData model data =
-    div [ class "mt-3" ] [ text "TODO" ]
+    div
+        [ class "m-3" ]
+        [ table
+            [ class "table" ]
+            [ viewHeader data.settings
+            , viewDraws model data
+            ]
+        ]
+
+
+viewHeader : Settings -> Html Msg
+viewHeader settings =
+    let
+        viewSheet sheet =
+            th [ class "text-center" ] [ text sheet ]
+    in
+    thead
+        []
+        [ tr
+            []
+            (th [] [ text "Draw" ]
+                :: th [] [ text "Starts at" ]
+                :: List.map viewSheet settings.sheets
+            )
+        ]
+
+
+viewDraws : Model -> Data -> Html Msg
+viewDraws model data =
+    tbody []
+        (List.map (viewDraw model data) data.draws)
+
+
+viewDraw : Model -> Data -> Draw -> Html Msg
+viewDraw model data draw =
+    tr [ class "m-2" ]
+        (td [] [ text draw.label ]
+            :: td [] [ text draw.startsAt ]
+            :: (List.range 1 (List.length data.settings.sheets)
+                    |> List.map (viewDrawSheet model data.games draw.id)
+               )
+        )
+
+
+viewDrawSheet : Model -> List Game -> Int -> Int -> Html Msg
+viewDrawSheet model games drawId sheet =
+    td [ class "text-center" ]
+        [ case findGame games drawId sheet of
+            Just game ->
+                text game.name
+
+            Nothing ->
+                text ""
+        ]

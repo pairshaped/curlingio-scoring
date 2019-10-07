@@ -29,9 +29,14 @@ type alias Flags =
 
 
 type alias Data =
-    { draws : List Draw
+    { settings : Settings
+    , draws : List Draw
     , games : List Game
     }
+
+
+type alias Settings =
+    { sheets : List String }
 
 
 type alias Draw =
@@ -61,8 +66,15 @@ type alias GamePosition =
 dataDecoder : Decoder Data
 dataDecoder =
     Decode.succeed Data
+        |> required "settings" settingsDecoder
         |> required "draws" (list drawDecoder)
         |> required "games" (list gameDecoder)
+
+
+settingsDecoder : Decoder Settings
+settingsDecoder =
+    Decode.succeed Settings
+        |> required "sheets" (list string)
 
 
 drawDecoder : Decoder Draw
