@@ -52,12 +52,14 @@ viewNotReady message =
 
 viewData : Model -> Data -> Html Msg
 viewData model data =
-    div
-        [ class "m-3" ]
-        [ table
-            [ class "table" ]
-            [ viewHeader data.settings
-            , viewDraws model data
+    div [ class "m-3" ]
+        [ div
+            [ class "table-responsive" ]
+            [ table
+                [ class "table" ]
+                [ viewHeader data.settings
+                , viewDraws model data
+                ]
             ]
         ]
 
@@ -87,7 +89,15 @@ viewDraws model data =
 
 viewDraw : Model -> Data -> Draw -> Html Msg
 viewDraw model data draw =
-    tr [ class "m-2" ]
+    let
+        currentDrawClass =
+            if data.settings.currentDrawId == draw.id then
+                "table-active"
+
+            else
+                ""
+    in
+    tr [ class "m-2", class currentDrawClass ]
         (td [] [ text draw.label ]
             :: td [] [ text draw.startsAt ]
             :: (List.range 1 (List.length data.settings.sheets)

@@ -36,7 +36,9 @@ type alias Data =
 
 
 type alias Settings =
-    { sheets : List String }
+    { sheets : List String
+    , currentDrawId : Int
+    }
 
 
 type alias Draw =
@@ -75,6 +77,7 @@ settingsDecoder : Decoder Settings
 settingsDecoder =
     Decode.succeed Settings
         |> required "sheets" (list string)
+        |> required "current_draw_id" int
 
 
 drawDecoder : Decoder Draw

@@ -1,29 +1,33 @@
 {
   "settings": {
-    "sheets": ["Sheet 1", "Sheet 2", "Sheet 3", "Sheet 4"]
+    "sheets": ["Sheet 1", "Sheet 2", "Sheet 3", "Sheet 4"],
+    "current_draw_id": 2
   },
   "draws": [
     { "id" : 1, "label": "1", "starts_at": "Sep 01 at 7:00 pm" },
     { "id" : 2, "label": "2", "starts_at": "Sep 08 at 7:00 pm" },
     { "id" : 3, "label": "3", "starts_at": "Sep 15 at 7:00 pm" },
-    { "id" : 4, "label": "4", "starts_at": "Sep 22 at 7:00 pm" }
+    { "id" : 4, "label": "4", "starts_at": "Sep 22 at 7:00 pm" },
+    { "id" : 5, "label": "5", "starts_at": "Sep 29 at 7:00 pm" },
+    { "id" : 6, "label": "6", "starts_at": "Oct 06 at 7:00 pm" },
+    { "id" : 7, "label": "7", "starts_at": "Oct 13 at 7:00 pm" }
   ],
   "games": [
     {
       "id": 1,
       "draw_id": 1,
       "sheet": 1,
-      "name": "A vs B",
+      "name": "D vs G",
       "game_positions": [
         {
           "id": 1,
-          "team_name": "Team A",
+          "team_name": "Team D",
           "score": 6,
           "result": "won"
         },
         {
           "id": 2,
-          "team_name": "Team B",
+          "team_name": "Team G",
           "score": 2,
           "result": "lost"
         }
@@ -33,17 +37,17 @@
       "id": 2,
       "draw_id": 1,
       "sheet": 2,
-      "name": "C vs D",
+      "name": "F vs C",
       "game_positions": [
         {
           "id": 3,
-          "team_name": "Team C",
+          "team_name": "Team F",
           "score": 0,
           "result": "lost"
         },
         {
           "id": 4,
-          "team_name": "Team D",
+          "team_name": "Team C",
           "score": 2,
           "result": "won"
         }
@@ -53,17 +57,17 @@
       "id": 3,
       "draw_id": 1,
       "sheet": 3,
-      "name": "E vs F",
+      "name": "H vs A",
       "game_positions": [
         {
           "id": 5,
-          "team_name": "Team E",
+          "team_name": "Team H",
           "score": 2,
           "result": "lost"
         },
         {
           "id": 8,
-          "team_name": "Team F",
+          "team_name": "Team A",
           "score": 2,
           "result": "won"
         }
@@ -73,19 +77,499 @@
       "id": 4,
       "draw_id": 1,
       "sheet": 4,
-      "name": "G vs H",
+      "name": "B vs E",
       "game_positions": [
         {
           "id": 7,
-          "team_name": "Team G",
+          "team_name": "Team B",
           "score": 3,
           "result": "won"
         },
         {
           "id": 8,
-          "team_name": "Team H",
+          "team_name": "Team E",
           "score": 2,
           "result": "lost"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "draw_id": 2,
+      "sheet": 1,
+      "name": "F vs A",
+      "game_positions": [
+        {
+          "id": 9,
+          "team_name": "Team F",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 10,
+          "team_name": "Team A",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "draw_id": 2,
+      "sheet": 2,
+      "name": "D vs E",
+      "game_positions": [
+        {
+          "id": 11,
+          "team_name": "Team D",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 12,
+          "team_name": "Team E",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "draw_id": 2,
+      "sheet": 3,
+      "name": "B vs G",
+      "game_positions": [
+        {
+          "id": 13,
+          "team_name": "Team B",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 14,
+          "team_name": "Team G",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "draw_id": 2,
+      "sheet": 4,
+      "name": "H vs C",
+      "game_positions": [
+        {
+          "id": 15,
+          "team_name": "Team H",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 16,
+          "team_name": "Team C",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "draw_id": 3,
+      "sheet": 1,
+      "name": "B vs H",
+      "game_positions": [
+        {
+          "id": 17,
+          "team_name": "Team B",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 18,
+          "team_name": "Team H",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "draw_id": 3,
+      "sheet": 2,
+      "name": "G vs A",
+      "game_positions": [
+        {
+          "id": 19,
+          "team_name": "Team G",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 20,
+          "team_name": "Team A",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "draw_id": 3,
+      "sheet": 3,
+      "name": "E vs C",
+      "game_positions": [
+        {
+          "id": 21,
+          "team_name": "Team E",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 22,
+          "team_name": "Team C",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "draw_id": 3,
+      "sheet": 4,
+      "name": "D vs F",
+      "game_positions": [
+        {
+          "id": 23,
+          "team_name": "Team D",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 24,
+          "team_name": "Team F",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "draw_id": 4,
+      "sheet": 1,
+      "name": "A vs C",
+      "game_positions": [
+        {
+          "id": 25,
+          "team_name": "Team A",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 26,
+          "team_name": "Team C",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "draw_id": 4,
+      "sheet": 2,
+      "name": "B vs D",
+      "game_positions": [
+        {
+          "id": 27,
+          "team_name": "Team B",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 28,
+          "team_name": "Team D",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "draw_id": 4,
+      "sheet": 3,
+      "name": "F vs H",
+      "game_positions": [
+        {
+          "id": 29,
+          "team_name": "Team F",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 30,
+          "team_name": "Team H",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "draw_id": 4,
+      "sheet": 4,
+      "name": "E vs G",
+      "game_positions": [
+        {
+          "id": 31,
+          "team_name": "Team E",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 32,
+          "team_name": "Team G",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "draw_id": 5,
+      "sheet": 1,
+      "name": "H vs D",
+      "game_positions": [
+        {
+          "id": 33,
+          "team_name": "Team H",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 34,
+          "team_name": "Team D",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "draw_id": 5,
+      "sheet": 2,
+      "name": "C vs G",
+      "game_positions": [
+        {
+          "id": 34,
+          "team_name": "Team C",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 35,
+          "team_name": "Team G",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "draw_id": 5,
+      "sheet": 3,
+      "name": "A vs E",
+      "game_positions": [
+        {
+          "id": 36,
+          "team_name": "Team A",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 37,
+          "team_name": "Team E",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "draw_id": 5,
+      "sheet": 4,
+      "name": "F vs B",
+      "game_positions": [
+        {
+          "id": 38,
+          "team_name": "Team F",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 39,
+          "team_name": "Team B",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "draw_id": 6,
+      "sheet": 1,
+      "name": "C vs B",
+      "game_positions": [
+        {
+          "id": 40,
+          "team_name": "Team C",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 41,
+          "team_name": "Team B",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "draw_id": 6,
+      "sheet": 2,
+      "name": "E vs H",
+      "game_positions": [
+        {
+          "id": 42,
+          "team_name": "Team E",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 43,
+          "team_name": "Team H",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "draw_id": 6,
+      "sheet": 3,
+      "name": "G vs F",
+      "game_positions": [
+        {
+          "id": 43,
+          "team_name": "Team G",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 44,
+          "team_name": "Team F",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "draw_id": 6,
+      "sheet": 4,
+      "name": "A vs D",
+      "game_positions": [
+        {
+          "id": 45,
+          "team_name": "Team A",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 46,
+          "team_name": "Team D",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "draw_id": 7,
+      "sheet": 1,
+      "name": "E vs F",
+      "game_positions": [
+        {
+          "id": 47,
+          "team_name": "Team E",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 48,
+          "team_name": "Team F",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "draw_id": 7,
+      "sheet": 2,
+      "name": "A vs B",
+      "game_positions": [
+        {
+          "id": 49,
+          "team_name": "Team A",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 50,
+          "team_name": "Team B",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "draw_id": 7,
+      "sheet": 3,
+      "name": "C vs D",
+      "game_positions": [
+        {
+          "id": 51,
+          "team_name": "Team C",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 52,
+          "team_name": "Team D",
+          "score": null,
+          "result": null
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "draw_id": 7,
+      "sheet": 4,
+      "name": "G vs H",
+      "game_positions": [
+        {
+          "id": 53,
+          "team_name": "Team G",
+          "score": null,
+          "result": null
+        },
+        {
+          "id": 54,
+          "team_name": "Team H",
+          "score": null,
+          "result": null
         }
       ]
     }
