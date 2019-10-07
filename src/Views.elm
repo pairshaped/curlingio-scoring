@@ -1,9 +1,10 @@
 module Views exposing (view)
 
 import Helpers exposing (..)
-import Html exposing (Html, button, div, input, option, p, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, max, min, required, style, type_, value)
+import Html exposing (Html, a, button, div, input, option, p, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (class, href, max, min, required, style, type_, value)
 import Html.Events exposing (onClick, onInput)
+import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
 import RemoteData exposing (RemoteData(..))
 import Types exposing (..)
@@ -11,36 +12,41 @@ import Types exposing (..)
 
 view : Model -> Html Msg
 view model =
-    case model.fetchedData of
-        NotAsked ->
-            viewNotReady "Initializing..."
+    case model.selectedGame of
+        Just game ->
+            viewSelectedGame model game
 
-        Loading ->
-            viewNotReady "Loading..."
+        Nothing ->
+            case model.data of
+                NotAsked ->
+                    viewNotReady "Initializing..."
 
-        Failure error ->
-            let
-                errorMessage =
-                    case error of
-                        Http.BadUrl string ->
-                            "Bad URL used to fetch games: " ++ string
+                Loading ->
+                    viewNotReady "Loading..."
 
-                        Http.Timeout ->
-                            "Network timeout when trying to fetch games."
+                Failure error ->
+                    let
+                        errorMessage =
+                            case error of
+                                Http.BadUrl string ->
+                                    "Bad URL used to fetch games: " ++ string
 
-                        Http.NetworkError ->
-                            "Network error when trying to fetch games."
+                                Http.Timeout ->
+                                    "Network timeout when trying to fetch games."
 
-                        Http.BadStatus int ->
-                            "Bad status response from server when trying to fetch games."
+                                Http.NetworkError ->
+                                    "Network error when trying to fetch games."
 
-                        Http.BadBody string ->
-                            "Bad body response from server when trying to fetch games: " ++ string
-            in
-            viewNotReady errorMessage
+                                Http.BadStatus int ->
+                                    "Bad status response from server when trying to fetch games."
 
-        Success data ->
-            viewData model data
+                                Http.BadBody string ->
+                                    "Bad body response from server when trying to fetch games: " ++ string
+                    in
+                    viewNotReady errorMessage
+
+                Success data ->
+                    viewData model data
 
 
 viewNotReady : String -> Html Msg
@@ -111,8 +117,18 @@ viewDrawSheet model games drawId sheet =
     td [ class "text-center" ]
         [ case findGame games drawId sheet of
             Just game ->
-                text game.name
+                viewGame game
 
             Nothing ->
                 text ""
         ]
+
+
+viewGame : Game -> Html Msg
+viewGame game =
+    a [ href "#", onClickPreventDefault (SelectedGame game) ] [ text game.name ]
+
+
+viewSelectedGame : Model -> Game -> Html Msg
+viewSelectedGame model game =
+    div [] [ text "On a game" ]

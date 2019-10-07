@@ -10,16 +10,18 @@ import RemoteData exposing (WebData)
 type Msg
     = GotData (WebData Data)
     | PatchedGame (WebData Game)
-    | UpdateGameName Int String
-    | UpdateGamePositionScore Int Int
-    | UpdateGamePositionResult Int String
+    | SelectedGame Game
+    | UpdateGameName Game String
+    | UpdateGamePositionScore GamePosition Int
+    | UpdateGamePositionResult GamePosition String
     | SaveGame Int
 
 
 type alias Model =
     { flags : Flags
-    , fetchedData : WebData Data
+    , data : WebData Data
     , savedGame : WebData Game
+    , selectedGame : Maybe Game
     }
 
 
