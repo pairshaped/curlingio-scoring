@@ -186,17 +186,14 @@ viewGamePosition gamePosition =
             [ class "btn-group btn-group-sm" ]
             [ button
                 [ type_ "button"
+                , onClick (UpdateGamePositionResult gamePosition Won)
                 , class
-                    ("btn btn-secondary"
+                    ("btn btn-info"
                         ++ (case gamePosition.result of
-                                Just result ->
-                                    if result == "won" then
-                                        " active"
+                                Won ->
+                                    " active"
 
-                                    else
-                                        ""
-
-                                Nothing ->
+                                _ ->
                                     ""
                            )
                     )
@@ -205,16 +202,12 @@ viewGamePosition gamePosition =
             , button
                 [ type_ "button"
                 , class
-                    ("btn btn-secondary"
+                    ("btn btn-info"
                         ++ (case gamePosition.result of
-                                Just result ->
-                                    if result == "lost" then
-                                        " active"
+                                Lost ->
+                                    " active"
 
-                                    else
-                                        ""
-
-                                Nothing ->
+                                _ ->
                                     ""
                            )
                     )
@@ -223,16 +216,12 @@ viewGamePosition gamePosition =
             , button
                 [ type_ "button"
                 , class
-                    ("btn btn-secondary"
+                    ("btn btn-info"
                         ++ (case gamePosition.result of
-                                Just result ->
-                                    if result == "tied" then
-                                        " active"
+                                Tied ->
+                                    " active"
 
-                                    else
-                                        ""
-
-                                Nothing ->
+                                _ ->
                                     ""
                            )
                     )

@@ -1,7 +1,7 @@
 module Types exposing (..)
 
 import Json.Decode as Decode exposing (Decoder, int, list, nullable, string)
-import Json.Decode.Pipeline exposing (required)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode
 import Json.Encode.Extra exposing (maybe)
 import RemoteData exposing (WebData)
@@ -13,9 +13,16 @@ type Msg
     | SelectedGame Game
     | ClosedGame
     | UpdateGameName String
-    | UpdateGamePositionScore GamePosition Int
-    | UpdateGamePositionResult GamePosition String
+    | UpdateGamePositionScore GamePosition String
+    | UpdateGamePositionResult GamePosition GamePositionResult
     | SaveGame Game
+
+
+type GamePositionResult
+    = Won
+    | Lost
+    | Tied
+    | NoResult
 
 
 type alias Model =
@@ -64,7 +71,7 @@ type alias GamePosition =
     { id : Int
     , teamName : String
     , score : Maybe Int
-    , result : Maybe String
+    , result : GamePositionResult
     }
 
 
@@ -106,8 +113,28 @@ gamePositionDecoder =
     Decode.succeed GamePosition
         |> required "id" int
         |> required "team_name" string
-        |> required "score" (nullable int)
-        |> required "result" (nullable string)
+        |> optional "score" (nullable int) Nothing
+        |> optional "result" gamePositionResultDecoder NoResult
+
+
+gamePositionResultDecoder : Decoder GamePositionResult
+gamePositionResultDecoder =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "won" ->
+                        Decode.succeed Won
+
+                    "lost" ->
+                        Decode.succeed Lost
+
+                    "tied" ->
+                        Decode.succeed Tied
+
+                    _ ->
+                        Decode.succeed NoResult
+            )
 
 
 encodeGame : Game -> Encode.Value
@@ -127,5 +154,21 @@ encodeGamePosition gamePosition =
         [ ( "id", Encode.int gamePosition.id )
         , ( "team_name", Encode.string gamePosition.teamName )
         , ( "score", maybe Encode.int gamePosition.score )
-        , ( "result", maybe Encode.string gamePosition.result )
+        , ( "result", encodeGamePositionResult gamePosition.result )
         ]
+
+
+encodeGamePositionResult : GamePositionResult -> Encode.Value
+encodeGamePositionResult gamePositionResult =
+    case gamePositionResult of
+        Won ->
+            Encode.string "won"
+
+        Lost ->
+            Encode.string "lost"
+
+        Tied ->
+            Encode.string "tied"
+
+        NoResult ->
+            Encode.null

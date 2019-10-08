@@ -101,15 +101,11 @@
       "game_positions": [
         {
           "id": 9,
-          "team_name": "Team F",
-          "score": null,
-          "result": null
+          "team_name": "Team F"
         },
         {
           "id": 10,
-          "team_name": "Team A",
-          "score": null,
-          "result": null
+          "team_name": "Team A"
         }
       ]
     },
@@ -121,15 +117,11 @@
       "game_positions": [
         {
           "id": 11,
-          "team_name": "Team D",
-          "score": null,
-          "result": null
+          "team_name": "Team D"
         },
         {
           "id": 12,
-          "team_name": "Team E",
-          "score": null,
-          "result": null
+          "team_name": "Team E"
         }
       ]
     },
@@ -141,15 +133,11 @@
       "game_positions": [
         {
           "id": 13,
-          "team_name": "Team B",
-          "score": null,
-          "result": null
+          "team_name": "Team B"
         },
         {
           "id": 14,
-          "team_name": "Team G",
-          "score": null,
-          "result": null
+          "team_name": "Team G"
         }
       ]
     },
@@ -161,15 +149,11 @@
       "game_positions": [
         {
           "id": 15,
-          "team_name": "Team H",
-          "score": null,
-          "result": null
+          "team_name": "Team H"
         },
         {
           "id": 16,
-          "team_name": "Team C",
-          "score": null,
-          "result": null
+          "team_name": "Team C"
         }
       ]
     },
@@ -181,15 +165,11 @@
       "game_positions": [
         {
           "id": 17,
-          "team_name": "Team B",
-          "score": null,
-          "result": null
+          "team_name": "Team B"
         },
         {
           "id": 18,
-          "team_name": "Team H",
-          "score": null,
-          "result": null
+          "team_name": "Team H"
         }
       ]
     },
@@ -201,15 +181,11 @@
       "game_positions": [
         {
           "id": 19,
-          "team_name": "Team G",
-          "score": null,
-          "result": null
+          "team_name": "Team G"
         },
         {
           "id": 20,
-          "team_name": "Team A",
-          "score": null,
-          "result": null
+          "team_name": "Team A"
         }
       ]
     },
@@ -221,15 +197,11 @@
       "game_positions": [
         {
           "id": 21,
-          "team_name": "Team E",
-          "score": null,
-          "result": null
+          "team_name": "Team E"
         },
         {
           "id": 22,
-          "team_name": "Team C",
-          "score": null,
-          "result": null
+          "team_name": "Team C"
         }
       ]
     },
@@ -241,15 +213,11 @@
       "game_positions": [
         {
           "id": 23,
-          "team_name": "Team D",
-          "score": null,
-          "result": null
+          "team_name": "Team D"
         },
         {
           "id": 24,
-          "team_name": "Team F",
-          "score": null,
-          "result": null
+          "team_name": "Team F"
         }
       ]
     },
@@ -261,15 +229,11 @@
       "game_positions": [
         {
           "id": 25,
-          "team_name": "Team A",
-          "score": null,
-          "result": null
+          "team_name": "Team A"
         },
         {
           "id": 26,
-          "team_name": "Team C",
-          "score": null,
-          "result": null
+          "team_name": "Team C"
         }
       ]
     },
@@ -281,15 +245,11 @@
       "game_positions": [
         {
           "id": 27,
-          "team_name": "Team B",
-          "score": null,
-          "result": null
+          "team_name": "Team B"
         },
         {
           "id": 28,
-          "team_name": "Team D",
-          "score": null,
-          "result": null
+          "team_name": "Team D"
         }
       ]
     },
@@ -301,15 +261,11 @@
       "game_positions": [
         {
           "id": 29,
-          "team_name": "Team F",
-          "score": null,
-          "result": null
+          "team_name": "Team F"
         },
         {
           "id": 30,
-          "team_name": "Team H",
-          "score": null,
-          "result": null
+          "team_name": "Team H"
         }
       ]
     },
@@ -321,15 +277,11 @@
       "game_positions": [
         {
           "id": 31,
-          "team_name": "Team E",
-          "score": null,
-          "result": null
+          "team_name": "Team E"
         },
         {
           "id": 32,
-          "team_name": "Team G",
-          "score": null,
-          "result": null
+          "team_name": "Team G"
         }
       ]
     },
@@ -341,15 +293,11 @@
       "game_positions": [
         {
           "id": 33,
-          "team_name": "Team H",
-          "score": null,
-          "result": null
+          "team_name": "Team H"
         },
         {
           "id": 34,
-          "team_name": "Team D",
-          "score": null,
-          "result": null
+          "team_name": "Team D"
         }
       ]
     },
@@ -361,15 +309,11 @@
       "game_positions": [
         {
           "id": 34,
-          "team_name": "Team C",
-          "score": null,
-          "result": null
+          "team_name": "Team C"
         },
         {
           "id": 35,
-          "team_name": "Team G",
-          "score": null,
-          "result": null
+          "team_name": "Team G"
         }
       ]
     },
@@ -381,15 +325,11 @@
       "game_positions": [
         {
           "id": 36,
-          "team_name": "Team A",
-          "score": null,
-          "result": null
+          "team_name": "Team A"
         },
         {
           "id": 37,
-          "team_name": "Team E",
-          "score": null,
-          "result": null
+          "team_name": "Team E"
         }
       ]
     },
@@ -401,15 +341,11 @@
       "game_positions": [
         {
           "id": 38,
-          "team_name": "Team F",
-          "score": null,
-          "result": null
+          "team_name": "Team F"
         },
         {
           "id": 39,
-          "team_name": "Team B",
-          "score": null,
-          "result": null
+          "team_name": "Team B"
         }
       ]
     },
@@ -421,15 +357,11 @@
       "game_positions": [
         {
           "id": 40,
-          "team_name": "Team C",
-          "score": null,
-          "result": null
+          "team_name": "Team C"
         },
         {
           "id": 41,
-          "team_name": "Team B",
-          "score": null,
-          "result": null
+          "team_name": "Team B"
         }
       ]
     },
@@ -441,15 +373,11 @@
       "game_positions": [
         {
           "id": 42,
-          "team_name": "Team E",
-          "score": null,
-          "result": null
+          "team_name": "Team E"
         },
         {
           "id": 43,
-          "team_name": "Team H",
-          "score": null,
-          "result": null
+          "team_name": "Team H"
         }
       ]
     },
@@ -461,15 +389,11 @@
       "game_positions": [
         {
           "id": 43,
-          "team_name": "Team G",
-          "score": null,
-          "result": null
+          "team_name": "Team G"
         },
         {
           "id": 44,
-          "team_name": "Team F",
-          "score": null,
-          "result": null
+          "team_name": "Team F"
         }
       ]
     },
@@ -481,15 +405,11 @@
       "game_positions": [
         {
           "id": 45,
-          "team_name": "Team A",
-          "score": null,
-          "result": null
+          "team_name": "Team A"
         },
         {
           "id": 46,
-          "team_name": "Team D",
-          "score": null,
-          "result": null
+          "team_name": "Team D"
         }
       ]
     },
@@ -501,15 +421,11 @@
       "game_positions": [
         {
           "id": 47,
-          "team_name": "Team E",
-          "score": null,
-          "result": null
+          "team_name": "Team E"
         },
         {
           "id": 48,
-          "team_name": "Team F",
-          "score": null,
-          "result": null
+          "team_name": "Team F"
         }
       ]
     },
@@ -521,15 +437,11 @@
       "game_positions": [
         {
           "id": 49,
-          "team_name": "Team A",
-          "score": null,
-          "result": null
+          "team_name": "Team A"
         },
         {
           "id": 50,
-          "team_name": "Team B",
-          "score": null,
-          "result": null
+          "team_name": "Team B"
         }
       ]
     },
@@ -541,15 +453,11 @@
       "game_positions": [
         {
           "id": 51,
-          "team_name": "Team C",
-          "score": null,
-          "result": null
+          "team_name": "Team C"
         },
         {
           "id": 52,
-          "team_name": "Team D",
-          "score": null,
-          "result": null
+          "team_name": "Team D"
         }
       ]
     },
@@ -561,15 +469,11 @@
       "game_positions": [
         {
           "id": 53,
-          "team_name": "Team G",
-          "score": null,
-          "result": null
+          "team_name": "Team G"
         },
         {
           "id": 54,
-          "team_name": "Team H",
-          "score": null,
-          "result": null
+          "team_name": "Team H"
         }
       ]
     }
