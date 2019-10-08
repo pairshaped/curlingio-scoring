@@ -62,11 +62,54 @@ update msg model =
             in
             ( { model | selectedGame = updatedGame }, Cmd.none )
 
-        UpdateGamePositionScore gamePosition newScore ->
-            ( model, Cmd.none )
+        UpdateGamePositionScore onGamePosition newScore ->
+            let
+                updatedGamePosition gamePosition =
+                    if gamePosition.id == onGamePosition.id then
+                        { gamePosition | score = String.toInt newScore }
 
-        UpdateGamePositionResult gamePosition newResult ->
-            ( model, Cmd.none )
+                    else
+                        gamePosition
+
+                updatedGame =
+                    case model.selectedGame of
+                        Just game ->
+                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions }
+
+                        Nothing ->
+                            Nothing
+            in
+            ( { model | selectedGame = updatedGame }, Cmd.none )
+
+        UpdateGamePositionResult onGamePosition newResult ->
+            let
+                updatedGamePosition gamePosition =
+                    if gamePosition.id == onGamePosition.id then
+                        { gamePosition | result = newResult }
+
+                    else
+                        case newResult of
+                            Won ->
+                                { gamePosition | result = Lost }
+
+                            Lost ->
+                                { gamePosition | result = Won }
+
+                            Tied ->
+                                { gamePosition | result = Tied }
+
+                            NoResult ->
+                                { gamePosition | result = NoResult }
+
+                updatedGame =
+                    case model.selectedGame of
+                        Just game ->
+                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions }
+
+                        Nothing ->
+                            Nothing
+            in
+            ( { model | selectedGame = updatedGame }, Cmd.none )
 
         SaveGame id ->
             ( model, Cmd.none )

@@ -132,42 +132,50 @@ viewGame game =
 viewSelectedGame : Model -> Data -> Game -> Html Msg
 viewSelectedGame model data game =
     div
-        [ class "container mt-3" ]
+        [ style "min-height" "100%"
+        , style "min-height" "100vh"
+        , style "display" "flex"
+        , style "align-items" "center"
+        , style "background-color" "#444"
+        ]
         [ div
-            [ class "row justify-content-center" ]
+            [ class "container" ]
             [ div
-                [ class "col-12 col-md-10 col-lg-8 col-xl-6" ]
+                [ class "row justify-content-center align-items-center" ]
                 [ div
-                    [ class "card" ]
+                    [ class "col-12 col-md-10 col-lg-8 col-xl-6" ]
                     [ div
-                        [ class "card-body" ]
-                        (List.append
-                            [ h3
-                                [ class "card-title" ]
-                                [ text game.name ]
-                            , h6
-                                [ class "card-subtitle mb-2 text-muted" ]
-                                [ text
-                                    (case findDraw data.draws game.drawId of
-                                        Just draw ->
-                                            "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+                        [ class "card" ]
+                        [ div
+                            [ class "card-body" ]
+                            (List.append
+                                [ h3
+                                    [ class "card-title" ]
+                                    [ text game.name ]
+                                , h6
+                                    [ class "card-subtitle mb-2 text-muted" ]
+                                    [ text
+                                        (case findDraw data.draws game.drawId of
+                                            Just draw ->
+                                                "Draw " ++ draw.label ++ " - " ++ draw.startsAt
 
-                                        Nothing ->
-                                            "Unknown Draw"
-                                    )
+                                            Nothing ->
+                                                "Unknown Draw"
+                                        )
+                                    ]
+                                , hr [] []
                                 ]
-                            , hr [] []
+                                (List.map viewGamePosition game.gamePositions)
+                            )
+                        , div
+                            [ class "d-flex justify-content-between card-footer" ]
+                            [ a
+                                [ href "#", class "btn btn-secondary", onClickPreventDefault ClosedGame ]
+                                [ text "Cancel" ]
+                            , a
+                                [ href "#", class "btn btn-primary" ]
+                                [ text "Save" ]
                             ]
-                            (List.map viewGamePosition game.gamePositions)
-                        )
-                    , div
-                        [ class "d-flex justify-content-between card-footer" ]
-                        [ a
-                            [ href "#", class "btn btn-secondary", onClickPreventDefault ClosedGame ]
-                            [ text "Cancel" ]
-                        , a
-                            [ href "#", class "btn btn-primary" ]
-                            [ text "Save" ]
                         ]
                     ]
                 ]
@@ -183,49 +191,70 @@ viewGamePosition gamePosition =
             [ class "card-text" ]
             [ text gamePosition.teamName ]
         , div
-            [ class "btn-group btn-group-sm" ]
-            [ button
-                [ type_ "button"
-                , onClick (UpdateGamePositionResult gamePosition Won)
-                , class
-                    ("btn btn-info"
-                        ++ (case gamePosition.result of
-                                Won ->
-                                    " active"
+            [ class "d-flex" ]
+            [ input
+                [ class "form-control mr-3"
+                , style "width" "60px"
+                , type_ "number"
+                , min "0"
+                , max "99"
+                , value
+                    (case gamePosition.score of
+                        Just val ->
+                            String.fromInt val
 
-                                _ ->
-                                    ""
-                           )
+                        Nothing ->
+                            ""
                     )
                 ]
-                [ text "Won" ]
-            , button
-                [ type_ "button"
-                , class
-                    ("btn btn-info"
-                        ++ (case gamePosition.result of
-                                Lost ->
-                                    " active"
+                []
+            , div
+                [ class "btn-group btn-group-sm" ]
+                [ button
+                    [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition Won)
+                    , class
+                        ("btn btn-info"
+                            ++ (case gamePosition.result of
+                                    Won ->
+                                        " active"
 
-                                _ ->
-                                    ""
-                           )
-                    )
-                ]
-                [ text "Lost" ]
-            , button
-                [ type_ "button"
-                , class
-                    ("btn btn-info"
-                        ++ (case gamePosition.result of
-                                Tied ->
-                                    " active"
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ text "Won" ]
+                , button
+                    [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition Lost)
+                    , class
+                        ("btn btn-info"
+                            ++ (case gamePosition.result of
+                                    Lost ->
+                                        " active"
 
-                                _ ->
-                                    ""
-                           )
-                    )
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ text "Lost" ]
+                , button
+                    [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition Tied)
+                    , class
+                        ("btn btn-info"
+                            ++ (case gamePosition.result of
+                                    Tied ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ text "Tied" ]
                 ]
-                [ text "Tied" ]
             ]
         ]
