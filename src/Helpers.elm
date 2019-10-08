@@ -8,12 +8,12 @@ import Types exposing (..)
 
 getData : String -> Cmd Msg
 getData url =
-    RemoteData.Http.get url GotData dataDecoder
+    RemoteData.Http.get (url ++ "/db") GotData dataDecoder
 
 
 patchGame : String -> Game -> Cmd Msg
 patchGame url game =
-    RemoteData.Http.patch url PatchedGame gameDecoder (encodeGame game)
+    RemoteData.Http.patch (url ++ "/games/" ++ String.fromInt game.id) PatchedGame gameDecoder (encodeGame game)
 
 
 findGame : List Game -> Int -> Int -> Maybe Game

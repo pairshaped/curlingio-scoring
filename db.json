@@ -1,17 +1,50 @@
 {
   "settings": {
-    "sheets": ["Sheet 1", "Sheet 2", "Sheet 3", "Sheet 4"],
+    "sheets": [
+      "Sheet 1",
+      "Sheet 2",
+      "Sheet 3",
+      "Sheet 4"
+    ],
     "current_draw_id": 2,
     "name_change_allowed": false
   },
   "draws": [
-    { "id" : 1, "label": "1", "starts_at": "Sep 01 at 7:00 pm" },
-    { "id" : 2, "label": "2", "starts_at": "Sep 08 at 7:00 pm" },
-    { "id" : 3, "label": "3", "starts_at": "Sep 15 at 7:00 pm" },
-    { "id" : 4, "label": "4", "starts_at": "Sep 22 at 7:00 pm" },
-    { "id" : 5, "label": "5", "starts_at": "Sep 29 at 7:00 pm" },
-    { "id" : 6, "label": "6", "starts_at": "Oct 06 at 7:00 pm" },
-    { "id" : 7, "label": "7", "starts_at": "Oct 13 at 7:00 pm" }
+    {
+      "id": 1,
+      "label": "1",
+      "starts_at": "Sep 01 at 7:00 pm"
+    },
+    {
+      "id": 2,
+      "label": "2",
+      "starts_at": "Sep 08 at 7:00 pm"
+    },
+    {
+      "id": 3,
+      "label": "3",
+      "starts_at": "Sep 15 at 7:00 pm"
+    },
+    {
+      "id": 4,
+      "label": "4",
+      "starts_at": "Sep 22 at 7:00 pm"
+    },
+    {
+      "id": 5,
+      "label": "5",
+      "starts_at": "Sep 29 at 7:00 pm"
+    },
+    {
+      "id": 6,
+      "label": "6",
+      "starts_at": "Oct 06 at 7:00 pm"
+    },
+    {
+      "id": 7,
+      "label": "7",
+      "starts_at": "Oct 13 at 7:00 pm"
+    }
   ],
   "games": [
     {
@@ -102,11 +135,15 @@
       "game_positions": [
         {
           "id": 9,
-          "team_name": "Team F"
+          "team_name": "Team F",
+          "score": null,
+          "result": null
         },
         {
           "id": 10,
-          "team_name": "Team A"
+          "team_name": "Team A",
+          "score": null,
+          "result": null
         }
       ]
     },
@@ -118,11 +155,15 @@
       "game_positions": [
         {
           "id": 11,
-          "team_name": "Team D"
+          "team_name": "Team D",
+          "score": null,
+          "result": null
         },
         {
           "id": 12,
-          "team_name": "Team E"
+          "team_name": "Team E",
+          "score": null,
+          "result": null
         }
       ]
     },
@@ -134,11 +175,15 @@
       "game_positions": [
         {
           "id": 13,
-          "team_name": "Team B"
+          "team_name": "Team B",
+          "score": null,
+          "result": null
         },
         {
           "id": 14,
-          "team_name": "Team G"
+          "team_name": "Team G",
+          "score": null,
+          "result": null
         }
       ]
     },
@@ -230,11 +275,15 @@
       "game_positions": [
         {
           "id": 25,
-          "team_name": "Team A"
+          "team_name": "Team A",
+          "score": 2,
+          "result": "won"
         },
         {
           "id": 26,
-          "team_name": "Team C"
+          "team_name": "Team C",
+          "score": 0,
+          "result": "lost"
         }
       ]
     },

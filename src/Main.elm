@@ -34,15 +34,58 @@ update msg model =
                 selectedGame =
                     case data of
                         Success decodedData ->
-                            List.head decodedData.games
+                            -- List.head decodedData.games
+                            Nothing
 
                         _ ->
                             Nothing
             in
             ( { model | data = data, selectedGame = selectedGame }, Cmd.none )
 
-        PatchedGame savedGame ->
-            ( { model | savedGame = savedGame }, Cmd.none )
+        SaveGame ->
+            let
+                sendPatch =
+                    case model.selectedGame of
+                        Just game ->
+                            patchGame model.flags.url game
+
+                        Nothing ->
+                            Cmd.none
+            in
+            ( { model | savedGame = Loading }, sendPatch )
+
+        PatchedGame gameResponse ->
+            let
+                selectedGame =
+                    case gameResponse of
+                        Success decodedGame ->
+                            Nothing
+
+                        _ ->
+                            model.selectedGame
+
+                updatedGame gameFromSave game =
+                    if game.id == gameFromSave.id then
+                        gameFromSave
+
+                    else
+                        game
+
+                updatedData =
+                    case gameResponse of
+                        Success decodedGame ->
+                            case model.data of
+                                Success decodedData ->
+                                    -- List.head decodedData.games
+                                    Success { decodedData | games = List.map (updatedGame decodedGame) decodedData.games }
+
+                                _ ->
+                                    model.data
+
+                        _ ->
+                            model.data
+            in
+            ( { model | selectedGame = selectedGame, savedGame = gameResponse, data = updatedData }, Cmd.none )
 
         SelectGame game ->
             ( { model | selectedGame = Just game }, Cmd.none )
@@ -123,9 +166,6 @@ update msg model =
                             Nothing
             in
             ( { model | selectedGame = updatedGame }, Cmd.none )
-
-        SaveGame ->
-            ( model, Cmd.none )
 
 
 

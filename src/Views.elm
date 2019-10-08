@@ -74,14 +74,14 @@ viewHeader : Settings -> Html Msg
 viewHeader settings =
     let
         viewSheet sheet =
-            th [ class "text-center" ] [ text sheet ]
+            th [ class "text-center", style "min-width" "160px" ] [ text sheet ]
     in
     thead
         []
         [ tr
             []
-            (th [] [ text "Draw" ]
-                :: th [] [ text "Starts at" ]
+            (th [ style "min-width" "60px" ] [ text "Draw" ]
+                :: th [ style "min-width" "170px" ] [ text "Starts at" ]
                 :: List.map viewSheet settings.sheets
             )
         ]
