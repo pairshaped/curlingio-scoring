@@ -1,6 +1,6 @@
 module Types exposing (..)
 
-import Json.Decode as Decode exposing (Decoder, int, list, nullable, string)
+import Json.Decode as Decode exposing (Decoder, bool, int, list, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
 import Json.Encode.Extra exposing (maybe)
@@ -48,6 +48,7 @@ type alias Data =
 type alias Settings =
     { sheets : List String
     , currentDrawId : Int
+    , nameChangeAllowed : Bool
     }
 
 
@@ -89,6 +90,7 @@ settingsDecoder =
     Decode.succeed Settings
         |> required "sheets" (list string)
         |> required "current_draw_id" int
+        |> required "name_change_allowed" bool
 
 
 drawDecoder : Decoder Draw

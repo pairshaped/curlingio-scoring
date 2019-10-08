@@ -55,7 +55,7 @@ update msg model =
                 updatedGame =
                     case model.selectedGame of
                         Just game ->
-                            Just { game | name = newName }
+                            Just { game | name = newName, changed = True }
 
                         Nothing ->
                             Nothing

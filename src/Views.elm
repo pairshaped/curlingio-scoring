@@ -1,7 +1,7 @@
 module Views exposing (view)
 
 import Helpers exposing (..)
-import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, disabled, href, max, min, required, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
@@ -64,7 +64,7 @@ viewData model data =
             [ table
                 [ class "table" ]
                 [ viewHeader data.settings
-                , viewDraws model data
+                , viewDraws data
                 ]
             ]
         ]
@@ -87,14 +87,14 @@ viewHeader settings =
         ]
 
 
-viewDraws : Model -> Data -> Html Msg
-viewDraws model data =
+viewDraws : Data -> Html Msg
+viewDraws data =
     tbody []
-        (List.map (viewDraw model data) data.draws)
+        (List.map (viewDraw data) data.draws)
 
 
-viewDraw : Model -> Data -> Draw -> Html Msg
-viewDraw model data draw =
+viewDraw : Data -> Draw -> Html Msg
+viewDraw data draw =
     let
         currentDrawClass =
             if data.settings.currentDrawId == draw.id then
@@ -107,13 +107,13 @@ viewDraw model data draw =
         (td [] [ text draw.label ]
             :: td [] [ text draw.startsAt ]
             :: (List.range 1 (List.length data.settings.sheets)
-                    |> List.map (viewDrawSheet model data.games draw.id)
+                    |> List.map (viewDrawSheet data.games draw.id)
                )
         )
 
 
-viewDrawSheet : Model -> List Game -> Int -> Int -> Html Msg
-viewDrawSheet model games drawId sheet =
+viewDrawSheet : List Game -> Int -> Int -> Html Msg
+viewDrawSheet games drawId sheet =
     td [ class "text-center" ]
         [ case findGame games drawId sheet of
             Just game ->
@@ -131,6 +131,24 @@ viewGame game =
 
 viewSelectedGame : Model -> Data -> Game -> Html Msg
 viewSelectedGame model data game =
+    let
+        editableGameName =
+            input
+                [ value game.name
+                , onInput UpdateGameName
+                ]
+                []
+
+        nonEditableGameName =
+            span [] [ text game.name ]
+
+        gameName =
+            if data.settings.nameChangeAllowed then
+                editableGameName
+
+            else
+                nonEditableGameName
+    in
     div
         [ style "min-height" "100%"
         , style "min-height" "100vh"
@@ -151,7 +169,7 @@ viewSelectedGame model data game =
                             (List.append
                                 [ h3
                                     [ class "card-title" ]
-                                    [ text game.name ]
+                                    [ gameName ]
                                 , h6
                                     [ class "card-subtitle mb-2 text-muted" ]
                                     [ text
