@@ -50,27 +50,17 @@ update msg model =
         ClosedGame ->
             ( { model | selectedGame = Nothing }, Cmd.none )
 
-        UpdateGameName onGame newName ->
+        UpdateGameName newName ->
             let
-                updatedGame game =
-                    if game.id == onGame.id then
-                        { game | name = newName }
+                updatedGame =
+                    case model.selectedGame of
+                        Just game ->
+                            Just { game | name = newName }
 
-                    else
-                        game
-
-                updatedGames games =
-                    List.map updatedGame games
-
-                updatedData =
-                    case model.data of
-                        Success decodedData ->
-                            Success { decodedData | games = updatedGames decodedData.games }
-
-                        _ ->
-                            model.data
+                        Nothing ->
+                            Nothing
             in
-            ( { model | data = updatedData }, Cmd.none )
+            ( { model | selectedGame = updatedGame }, Cmd.none )
 
         UpdateGamePositionScore gamePosition newScore ->
             ( model, Cmd.none )

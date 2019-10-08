@@ -12,10 +12,10 @@ type Msg
     | PatchedGame (WebData Game)
     | SelectedGame Game
     | ClosedGame
-    | UpdateGameName Game String
+    | UpdateGameName String
     | UpdateGamePositionScore GamePosition Int
     | UpdateGamePositionResult GamePosition String
-    | SaveGame Int
+    | SaveGame Game
 
 
 type alias Model =
