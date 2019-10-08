@@ -30,13 +30,25 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotData data ->
-            ( { model | data = data }, Cmd.none )
+            let
+                selectedGame =
+                    case data of
+                        Success decodedData ->
+                            List.head decodedData.games
+
+                        _ ->
+                            Nothing
+            in
+            ( { model | data = data, selectedGame = selectedGame }, Cmd.none )
 
         PatchedGame savedGame ->
             ( { model | savedGame = savedGame }, Cmd.none )
 
         SelectedGame game ->
             ( { model | selectedGame = Just game }, Cmd.none )
+
+        ClosedGame ->
+            ( { model | selectedGame = Nothing }, Cmd.none )
 
         UpdateGameName onGame newName ->
             let

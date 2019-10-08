@@ -11,6 +11,7 @@ type Msg
     = GotData (WebData Data)
     | PatchedGame (WebData Game)
     | SelectedGame Game
+    | ClosedGame
     | UpdateGameName Game String
     | UpdateGamePositionScore GamePosition Int
     | UpdateGamePositionResult GamePosition String

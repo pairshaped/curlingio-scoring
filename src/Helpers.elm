@@ -19,3 +19,8 @@ patchGame url game =
 findGame : List Game -> Int -> Int -> Maybe Game
 findGame games drawId sheet =
     List.Extra.find (\game -> game.drawId == drawId && game.sheet == sheet) games
+
+
+findDraw : List Draw -> Int -> Maybe Draw
+findDraw draws drawId =
+    List.Extra.find (\draw -> draw.id == drawId) draws

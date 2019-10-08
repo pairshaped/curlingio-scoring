@@ -1,7 +1,7 @@
 module Views exposing (view)
 
 import Helpers exposing (..)
-import Html exposing (Html, a, button, div, input, option, p, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, href, max, min, required, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
@@ -12,40 +12,40 @@ import Types exposing (..)
 
 view : Model -> Html Msg
 view model =
-    case model.selectedGame of
-        Just game ->
-            viewSelectedGame model game
+    case model.data of
+        NotAsked ->
+            viewNotReady "Initializing..."
 
-        Nothing ->
-            case model.data of
-                NotAsked ->
-                    viewNotReady "Initializing..."
+        Loading ->
+            viewNotReady "Loading..."
 
-                Loading ->
-                    viewNotReady "Loading..."
+        Failure error ->
+            let
+                errorMessage =
+                    case error of
+                        Http.BadUrl string ->
+                            "Bad URL used to fetch games: " ++ string
 
-                Failure error ->
-                    let
-                        errorMessage =
-                            case error of
-                                Http.BadUrl string ->
-                                    "Bad URL used to fetch games: " ++ string
+                        Http.Timeout ->
+                            "Network timeout when trying to fetch games."
 
-                                Http.Timeout ->
-                                    "Network timeout when trying to fetch games."
+                        Http.NetworkError ->
+                            "Network error when trying to fetch games."
 
-                                Http.NetworkError ->
-                                    "Network error when trying to fetch games."
+                        Http.BadStatus int ->
+                            "Bad status response from server when trying to fetch games."
 
-                                Http.BadStatus int ->
-                                    "Bad status response from server when trying to fetch games."
+                        Http.BadBody string ->
+                            "Bad body response from server when trying to fetch games: " ++ string
+            in
+            viewNotReady errorMessage
 
-                                Http.BadBody string ->
-                                    "Bad body response from server when trying to fetch games: " ++ string
-                    in
-                    viewNotReady errorMessage
+        Success data ->
+            case model.selectedGame of
+                Just game ->
+                    viewSelectedGame model data game
 
-                Success data ->
+                Nothing ->
                     viewData model data
 
 
@@ -129,6 +129,114 @@ viewGame game =
     a [ href "#", onClickPreventDefault (SelectedGame game) ] [ text game.name ]
 
 
-viewSelectedGame : Model -> Game -> Html Msg
-viewSelectedGame model game =
-    div [] [ text "On a game" ]
+viewSelectedGame : Model -> Data -> Game -> Html Msg
+viewSelectedGame model data game =
+    div
+        [ class "container mt-3" ]
+        [ div
+            [ class "row justify-content-center" ]
+            [ div
+                [ class "col-12 col-md-10 col-lg-8 col-xl-6" ]
+                [ div
+                    [ class "card" ]
+                    [ div
+                        [ class "card-body" ]
+                        (List.append
+                            [ h3
+                                [ class "card-title" ]
+                                [ text game.name ]
+                            , h6
+                                [ class "card-subtitle mb-2 text-muted" ]
+                                [ text
+                                    (case findDraw data.draws game.drawId of
+                                        Just draw ->
+                                            "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+
+                                        Nothing ->
+                                            "Unknown Draw"
+                                    )
+                                ]
+                            , hr [] []
+                            ]
+                            (List.map viewGamePosition game.gamePositions)
+                        )
+                    , div
+                        [ class "d-flex justify-content-between card-footer" ]
+                        [ a
+                            [ href "#", class "btn btn-secondary", onClickPreventDefault ClosedGame ]
+                            [ text "Cancel" ]
+                        , a
+                            [ href "#", class "btn btn-primary" ]
+                            [ text "Save" ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+
+viewGamePosition : GamePosition -> Html Msg
+viewGamePosition gamePosition =
+    p
+        []
+        [ h5
+            [ class "card-text" ]
+            [ text gamePosition.teamName ]
+        , div
+            [ class "btn-group btn-group-sm" ]
+            [ button
+                [ type_ "button"
+                , class
+                    ("btn btn-secondary"
+                        ++ (case gamePosition.result of
+                                Just result ->
+                                    if result == "won" then
+                                        " active"
+
+                                    else
+                                        ""
+
+                                Nothing ->
+                                    ""
+                           )
+                    )
+                ]
+                [ text "Won" ]
+            , button
+                [ type_ "button"
+                , class
+                    ("btn btn-secondary"
+                        ++ (case gamePosition.result of
+                                Just result ->
+                                    if result == "lost" then
+                                        " active"
+
+                                    else
+                                        ""
+
+                                Nothing ->
+                                    ""
+                           )
+                    )
+                ]
+                [ text "Lost" ]
+            , button
+                [ type_ "button"
+                , class
+                    ("btn btn-secondary"
+                        ++ (case gamePosition.result of
+                                Just result ->
+                                    if result == "tied" then
+                                        " active"
+
+                                    else
+                                        ""
+
+                                Nothing ->
+                                    ""
+                           )
+                    )
+                ]
+                [ text "Tied" ]
+            ]
+        ]
