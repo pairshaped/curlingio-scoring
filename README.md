@@ -11,6 +11,7 @@
 
 ## Roadmap
 
+* Mobile friendly draw schedule. Vertical instead of horizontal, changing based on screen width.
 * Line scores (enabled via settings)
 * Shot by shot (enabled via settings)
 * Websockets for better refresh / multi-client performance.
