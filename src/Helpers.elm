@@ -21,6 +21,11 @@ findGame games drawId sheet =
     List.Extra.find (\game -> game.drawId == drawId && game.sheet == sheet) games
 
 
+findGameByName : List Game -> Int -> String -> Maybe Game
+findGameByName games excludeId name =
+    List.Extra.find (\game -> game.id /= excludeId && game.name == name) games
+
+
 findDraw : List Draw -> Int -> Maybe Draw
 findDraw draws drawId =
     List.Extra.find (\draw -> draw.id == drawId) draws

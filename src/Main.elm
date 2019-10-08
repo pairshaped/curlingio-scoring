@@ -64,6 +64,14 @@ update msg model =
                         _ ->
                             model.selectedGame
 
+                savedGame =
+                    case gameResponse of
+                        Success decodedGame ->
+                            NotAsked
+
+                        _ ->
+                            gameResponse
+
                 updatedGame gameFromSave game =
                     if game.id == gameFromSave.id then
                         gameFromSave
@@ -85,20 +93,45 @@ update msg model =
                         _ ->
                             model.data
             in
-            ( { model | selectedGame = selectedGame, savedGame = gameResponse, data = updatedData }, Cmd.none )
+            ( { model | selectedGame = selectedGame, savedGame = savedGame, data = updatedData }, Cmd.none )
 
         SelectGame game ->
-            ( { model | selectedGame = Just game }, Cmd.none )
+            ( { model | selectedGame = Just game, savedGame = NotAsked }, Cmd.none )
 
         CloseGame ->
-            ( { model | selectedGame = Nothing }, Cmd.none )
+            ( { model | selectedGame = Nothing, savedGame = NotAsked }, Cmd.none )
 
         UpdateGameName newName ->
             let
                 updatedGame =
                     case model.selectedGame of
                         Just game ->
-                            Just { game | name = newName, changed = True }
+                            Just { game | name = newName, changed = True, nameTaken = False }
+
+                        Nothing ->
+                            Nothing
+            in
+            ( { model | selectedGame = updatedGame }, Cmd.none )
+
+        ValidateGameName ->
+            let
+                games =
+                    case model.data of
+                        Success decodedData ->
+                            decodedData.games
+
+                        _ ->
+                            []
+
+                updatedGame =
+                    case model.selectedGame of
+                        Just game ->
+                            case findGameByName games game.id game.name of
+                                Just existingGame ->
+                                    Just { game | nameTaken = True }
+
+                                Nothing ->
+                                    Just { game | nameTaken = False }
 
                         Nothing ->
                             Nothing

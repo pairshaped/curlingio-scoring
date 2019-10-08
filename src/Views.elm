@@ -3,7 +3,7 @@ module Views exposing (view)
 import Helpers exposing (..)
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, disabled, href, max, min, required, style, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
 import RemoteData exposing (RemoteData(..))
@@ -136,6 +136,7 @@ viewSelectedGame model data game =
             input
                 [ value game.name
                 , onInput UpdateGameName
+                , onBlur ValidateGameName
                 ]
                 []
 
@@ -170,6 +171,7 @@ viewSelectedGame model data game =
                                 [ h3
                                     [ class "card-title" ]
                                     [ gameName ]
+                                , viewValidationError game
                                 , h6
                                     [ class "card-subtitle mb-2 text-muted" ]
                                     [ text
@@ -182,6 +184,7 @@ viewSelectedGame model data game =
                                         )
                                     ]
                                 , hr [] []
+                                , viewError model
                                 ]
                                 (List.map viewGamePosition game.gamePositions)
                             )
@@ -194,7 +197,7 @@ viewSelectedGame model data game =
                                 [ text "Cancel" ]
                             , button
                                 [ class "btn btn-primary"
-                                , disabled (not game.changed)
+                                , disabled (not game.changed || game.nameTaken)
                                 , onClick SaveGame
                                 ]
                                 [ text "Save" ]
@@ -204,6 +207,43 @@ viewSelectedGame model data game =
                 ]
             ]
         ]
+
+
+viewError : Model -> Html Msg
+viewError model =
+    case model.savedGame of
+        Failure error ->
+            let
+                errorMessage =
+                    case error of
+                        Http.BadUrl string ->
+                            "Bad URL used to save game: " ++ string
+
+                        Http.Timeout ->
+                            "Network timeout when trying to save the game."
+
+                        Http.NetworkError ->
+                            "Network error when trying to save the game."
+
+                        Http.BadStatus int ->
+                            "Error when trying to save the game."
+
+                        Http.BadBody string ->
+                            "Error when trying to save the game."
+            in
+            div [ class "alert alert-danger" ] [ text errorMessage ]
+
+        _ ->
+            span [ style "display" "none" ] []
+
+
+viewValidationError : Game -> Html Msg
+viewValidationError game =
+    if game.nameTaken then
+        div [ class "text-danger mt-n2 mb-3" ] [ text "Game name has already been taken." ]
+
+    else
+        span [ style "display" "none" ] []
 
 
 viewGamePosition : GamePosition -> Html Msg

@@ -13,6 +13,7 @@ type Msg
     | SelectGame Game
     | CloseGame
     | UpdateGameName String
+    | ValidateGameName
     | UpdateGamePositionScore GamePosition String
     | UpdateGamePositionResult GamePosition GamePositionResult
     | SaveGame
@@ -66,6 +67,7 @@ type alias Game =
     , name : String
     , gamePositions : List GamePosition
     , changed : Bool
+    , nameTaken : Bool
     }
 
 
@@ -109,6 +111,7 @@ gameDecoder =
         |> required "sheet" int
         |> required "name" string
         |> required "game_positions" (list gamePositionDecoder)
+        |> hardcoded False
         |> hardcoded False
 
 

@@ -131,19 +131,19 @@
       "id": 5,
       "draw_id": 2,
       "sheet": 1,
-      "name": "F vs A",
+      "name": "A vs F",
       "game_positions": [
         {
           "id": 9,
           "team_name": "Team F",
-          "score": null,
-          "result": null
+          "score": 1,
+          "result": "lost"
         },
         {
           "id": 10,
           "team_name": "Team A",
           "score": null,
-          "result": null
+          "result": "won"
         }
       ]
     },
@@ -195,11 +195,15 @@
       "game_positions": [
         {
           "id": 15,
-          "team_name": "Team H"
+          "team_name": "Team H",
+          "score": null,
+          "result": "tied"
         },
         {
           "id": 16,
-          "team_name": "Team C"
+          "team_name": "Team C",
+          "score": null,
+          "result": "tied"
         }
       ]
     },
