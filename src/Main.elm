@@ -66,7 +66,20 @@ update msg model =
             let
                 updatedGamePosition gamePosition =
                     if gamePosition.id == onGamePosition.id then
-                        { gamePosition | score = String.toInt newScore }
+                        let
+                            updatedScore =
+                                case String.toInt newScore of
+                                    Just int ->
+                                        if int > 99 || int < 0 then
+                                            Nothing
+
+                                        else
+                                            Just int
+
+                                    Nothing ->
+                                        Nothing
+                        in
+                        { gamePosition | score = updatedScore }
 
                     else
                         gamePosition

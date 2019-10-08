@@ -206,6 +206,7 @@ viewGamePosition gamePosition =
                         Nothing ->
                             ""
                     )
+                , onInput (UpdateGamePositionScore gamePosition)
                 ]
                 []
             , div
