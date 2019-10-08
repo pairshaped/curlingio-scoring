@@ -1,10 +1,19 @@
 # Scoring for [Curling I/O](https://curling.io)
 
-## Features:
+## Features
 
+* Lists games in their draw schedule. Possibly use a list view instead of the table / grid for phone compatibility.
+* Games can be clicked / touched which will replace the view with the game to be updated.
+* First class support for phones and tablets so that curlers can enter their own scores provided they're logged in with an account that has permissions.
+* Performant, fast UI switching and only updates the game on save (nothing else).
+* Game names can be changed if the user has appropriate permissions (access to stages).
+* Validations. Make sure game names are unique across the entire event. Make sure scores aren't astronomical or negative.
 
 ## Roadmap
 
+* Line scores (enabled via settings)
+* Shot by shot (enabled via settings)
+* Websockets for better refresh / multi-client performance.
 
 ## Installing Dependencies
 
