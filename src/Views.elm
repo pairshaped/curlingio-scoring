@@ -255,6 +255,21 @@ viewGamePosition gamePosition =
                         )
                     ]
                     [ text "Tied" ]
+                , button
+                    [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition NoResult)
+                    , class
+                        ("btn btn-info"
+                            ++ (case gamePosition.result of
+                                    NoResult ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ text "TBD" ]
                 ]
             ]
         ]
