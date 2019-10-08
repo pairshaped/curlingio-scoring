@@ -2,7 +2,7 @@ module Views exposing (view)
 
 import Helpers exposing (..)
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, href, max, min, required, style, type_, value)
+import Html.Attributes exposing (class, disabled, href, max, min, required, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -126,7 +126,7 @@ viewDrawSheet model games drawId sheet =
 
 viewGame : Game -> Html Msg
 viewGame game =
-    a [ href "#", onClickPreventDefault (SelectedGame game) ] [ text game.name ]
+    a [ href "#", onClickPreventDefault (SelectGame game) ] [ text game.name ]
 
 
 viewSelectedGame : Model -> Data -> Game -> Html Msg
@@ -169,11 +169,16 @@ viewSelectedGame model data game =
                             )
                         , div
                             [ class "d-flex justify-content-between card-footer" ]
-                            [ a
-                                [ href "#", class "btn btn-secondary", onClickPreventDefault ClosedGame ]
+                            [ button
+                                [ class "btn btn-secondary"
+                                , onClick CloseGame
+                                ]
                                 [ text "Cancel" ]
-                            , a
-                                [ href "#", class "btn btn-primary" ]
+                            , button
+                                [ class "btn btn-primary"
+                                , disabled (not game.changed)
+                                , onClick SaveGame
+                                ]
                                 [ text "Save" ]
                             ]
                         ]

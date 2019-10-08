@@ -44,10 +44,10 @@ update msg model =
         PatchedGame savedGame ->
             ( { model | savedGame = savedGame }, Cmd.none )
 
-        SelectedGame game ->
+        SelectGame game ->
             ( { model | selectedGame = Just game }, Cmd.none )
 
-        ClosedGame ->
+        CloseGame ->
             ( { model | selectedGame = Nothing }, Cmd.none )
 
         UpdateGameName newName ->
@@ -87,7 +87,7 @@ update msg model =
                 updatedGame =
                     case model.selectedGame of
                         Just game ->
-                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions }
+                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions, changed = True }
 
                         Nothing ->
                             Nothing
@@ -117,14 +117,14 @@ update msg model =
                 updatedGame =
                     case model.selectedGame of
                         Just game ->
-                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions }
+                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions, changed = True }
 
                         Nothing ->
                             Nothing
             in
             ( { model | selectedGame = updatedGame }, Cmd.none )
 
-        SaveGame id ->
+        SaveGame ->
             ( model, Cmd.none )
 
 

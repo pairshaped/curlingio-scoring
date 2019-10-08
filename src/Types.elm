@@ -1,7 +1,7 @@
 module Types exposing (..)
 
 import Json.Decode as Decode exposing (Decoder, int, list, nullable, string)
-import Json.Decode.Pipeline exposing (optional, required)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
 import Json.Encode.Extra exposing (maybe)
 import RemoteData exposing (WebData)
@@ -10,12 +10,12 @@ import RemoteData exposing (WebData)
 type Msg
     = GotData (WebData Data)
     | PatchedGame (WebData Game)
-    | SelectedGame Game
-    | ClosedGame
+    | SelectGame Game
+    | CloseGame
     | UpdateGameName String
     | UpdateGamePositionScore GamePosition String
     | UpdateGamePositionResult GamePosition GamePositionResult
-    | SaveGame Game
+    | SaveGame
 
 
 type GamePositionResult
@@ -64,6 +64,7 @@ type alias Game =
     , sheet : Int
     , name : String
     , gamePositions : List GamePosition
+    , changed : Bool
     }
 
 
@@ -106,6 +107,7 @@ gameDecoder =
         |> required "sheet" int
         |> required "name" string
         |> required "game_positions" (list gamePositionDecoder)
+        |> hardcoded False
 
 
 gamePositionDecoder : Decoder GamePosition
