@@ -136,14 +136,14 @@
         {
           "id": 9,
           "team_name": "Team F",
-          "score": 1,
-          "result": "lost"
+          "score": null,
+          "result": null
         },
         {
           "id": 10,
           "team_name": "Team A",
           "score": null,
-          "result": "won"
+          "result": null
         }
       ]
     },
@@ -197,13 +197,13 @@
           "id": 15,
           "team_name": "Team H",
           "score": null,
-          "result": "tied"
+          "result": null
         },
         {
           "id": 16,
           "team_name": "Team C",
           "score": null,
-          "result": "tied"
+          "result": null
         }
       ]
     },
@@ -280,14 +280,14 @@
         {
           "id": 25,
           "team_name": "Team A",
-          "score": 2,
-          "result": "won"
+          "score": null,
+          "result": null
         },
         {
           "id": 26,
           "team_name": "Team C",
-          "score": 0,
-          "result": "lost"
+          "score": null,
+          "result": null
         }
       ]
     },

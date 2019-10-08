@@ -9,6 +9,7 @@ import RemoteData exposing (WebData)
 
 type Msg
     = GotData (WebData Data)
+    | ReloadData
     | PatchedGame (WebData Game)
     | SelectGame Game
     | CloseGame

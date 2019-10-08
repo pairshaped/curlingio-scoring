@@ -38,7 +38,7 @@ view model =
                         Http.BadBody string ->
                             "Bad body response from server when trying to fetch games: " ++ string
             in
-            viewNotReady errorMessage
+            viewFetchError errorMessage
 
         Success data ->
             case model.selectedGame of
@@ -53,13 +53,25 @@ viewNotReady : String -> Html Msg
 viewNotReady message =
     div
         [ class "m-3" ]
-        [ text message ]
+        [ p [] [ text message ] ]
+
+
+viewFetchError : String -> Html Msg
+viewFetchError message =
+    div
+        [ class "m-3" ]
+        [ p [] [ text message ]
+        , button [ class "btn btn-primary", onClick ReloadData ] [ text "Reload" ]
+        ]
 
 
 viewData : Model -> Data -> Html Msg
 viewData model data =
     div [ class "m-3" ]
         [ div
+            [ class "text-right mb-2" ]
+            [ button [ class "btn btn-sm btn-primary", onClick ReloadData ] [ text "Reload" ] ]
+        , div
             [ class "table-responsive" ]
             [ table
                 [ class "table" ]
@@ -184,7 +196,7 @@ viewSelectedGame model data game =
                                         )
                                     ]
                                 , hr [] []
-                                , viewError model
+                                , viewGameSaveError model
                                 ]
                                 (List.map viewGamePosition game.gamePositions)
                             )
@@ -192,12 +204,13 @@ viewSelectedGame model data game =
                             [ class "d-flex justify-content-between card-footer" ]
                             [ button
                                 [ class "btn btn-secondary"
+                                , disabled (model.savedGame == Loading)
                                 , onClick CloseGame
                                 ]
                                 [ text "Cancel" ]
                             , button
                                 [ class "btn btn-primary"
-                                , disabled (not game.changed || game.nameTaken)
+                                , disabled (not game.changed || game.nameTaken || model.savedGame == Loading)
                                 , onClick SaveGame
                                 ]
                                 [ text "Save" ]
@@ -209,8 +222,8 @@ viewSelectedGame model data game =
         ]
 
 
-viewError : Model -> Html Msg
-viewError model =
+viewGameSaveError : Model -> Html Msg
+viewGameSaveError model =
     case model.savedGame of
         Failure error ->
             let

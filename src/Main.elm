@@ -42,6 +42,9 @@ update msg model =
             in
             ( { model | data = data, selectedGame = selectedGame }, Cmd.none )
 
+        ReloadData ->
+            ( { model | data = Loading, savedGame = NotAsked, selectedGame = Nothing }, getData model.flags.url )
+
         SaveGame ->
             let
                 sendPatch =
