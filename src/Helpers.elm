@@ -8,7 +8,7 @@ import Types exposing (..)
 
 getData : String -> Cmd Msg
 getData url =
-    RemoteData.Http.get (url ++ "/db") GotData dataDecoder
+    RemoteData.Http.get url GotData dataDecoder
 
 
 patchGame : String -> Game -> Cmd Msg
