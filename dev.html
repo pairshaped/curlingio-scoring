@@ -16,7 +16,9 @@
   </style>
 </head>
 <body>
-  <div id="scoring"></div>
+  <div class="container mt-3">
+    <div id="scoring"></div>
+  </div>
   <script>
     var scoring = Elm.Scoring.init({ node: document.getElementById("scoring"), flags: { url: "http://localhost:3000/api" } })
   </script>

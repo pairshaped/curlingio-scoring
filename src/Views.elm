@@ -51,15 +51,13 @@ view model =
 
 viewNotReady : String -> Html Msg
 viewNotReady message =
-    div
-        [ class "m-3" ]
-        [ p [] [ text message ] ]
+    p [] [ text message ]
 
 
 viewFetchError : String -> Html Msg
 viewFetchError message =
     div
-        [ class "m-3" ]
+        []
         [ p [] [ text message ]
         , button [ class "btn btn-primary", onClick ReloadData ] [ text "Reload" ]
         ]
@@ -67,7 +65,7 @@ viewFetchError message =
 
 viewData : Model -> Data -> Html Msg
 viewData model data =
-    div [ class "m-3" ]
+    div []
         [ div
             [ class "text-right" ]
             [ button [ class "btn btn-sm btn-primary mb-2", onClick ReloadData ] [ text "Reload" ]
