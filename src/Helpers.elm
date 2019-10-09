@@ -13,7 +13,7 @@ getData url =
 
 patchGame : String -> Game -> Cmd Msg
 patchGame url game =
-    RemoteData.Http.patch (url ++ "/games/" ++ String.fromInt game.id) PatchedGame gameDecoder (encodeGame game)
+    RemoteData.Http.patch (url ++ "/" ++ String.fromInt game.id) PatchedGame gameDecoder (encodeGame game)
 
 
 findGame : List Game -> Int -> Int -> Maybe Game

@@ -36,7 +36,8 @@ type alias Model =
 
 
 type alias Flags =
-    { url : String
+    { fetchUrl : String
+    , patchUrl : String
     }
 
 

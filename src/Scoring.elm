@@ -19,7 +19,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags NotAsked NotAsked Nothing, getData flags.url )
+    ( Model flags NotAsked NotAsked Nothing, getData flags.fetchUrl )
 
 
 
@@ -43,14 +43,14 @@ update msg model =
             ( { model | data = data, selectedGame = selectedGame }, Cmd.none )
 
         ReloadData ->
-            ( { model | data = Loading, savedGame = NotAsked, selectedGame = Nothing }, getData model.flags.url )
+            ( { model | data = Loading, savedGame = NotAsked, selectedGame = Nothing }, getData model.flags.fetchUrl )
 
         SaveGame ->
             let
                 sendPatch =
                     case model.selectedGame of
                         Just game ->
-                            patchGame model.flags.url game
+                            patchGame model.flags.patchUrl game
 
                         Nothing ->
                             Cmd.none
