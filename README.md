@@ -1,5 +1,7 @@
 # Scoring for [Curling I/O](https://curling.io)
 
+![Scoring for Curling I/O](curlingio-scoring.gif?raw=true "Scoring for Curling I/O")
+
 ## Features
 
 * Lists games in their draw schedule. Possibly use a list view instead of the table / grid for phone compatibility.
