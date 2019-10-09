@@ -69,9 +69,8 @@ viewData : Model -> Data -> Html Msg
 viewData model data =
     div [ class "m-3" ]
         [ div
-            [ class "d-flex justify-content-between" ]
-            [ h4 [] [ text data.settings.eventName ]
-            , button [ class "btn btn-sm btn-primary mb-2", onClick ReloadData ] [ text "Reload" ]
+            [ class "text-right" ]
+            [ button [ class "btn btn-sm btn-primary mb-2", onClick ReloadData ] [ text "Reload" ]
             ]
         , div
             [ class "table-responsive" ]
