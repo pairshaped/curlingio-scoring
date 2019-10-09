@@ -166,9 +166,8 @@ viewSelectedGame model data game =
     div
         [ style "min-height" "100%"
         , style "min-height" "100vh"
-        , style "display" "flex"
-        , style "align-items" "center"
         , style "background-color" "#444"
+        , class "pt-5"
         ]
         [ div
             [ class "container" ]
