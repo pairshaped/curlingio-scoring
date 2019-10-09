@@ -80,8 +80,11 @@ viewData model data =
         [ class "p-3" ]
         [ div
             [ class "d-flex justify-content-between mb-2" ]
-            [ button [ class "btn btn-sm btn-primary", onClick ReloadData ] [ text "Reload" ]
-            , a [ href model.flags.exitUrl, class "btn btn-sm btn-secondary" ] [ text "Exit" ]
+            [ h5 [] [ text data.settings.eventName ]
+            , div [ class "text-right" ]
+                [ button [ class "btn btn-sm btn-primary mr-2", onClick ReloadData ] [ text "Reload" ]
+                , a [ href model.flags.exitUrl, class "btn btn-sm btn-secondary" ] [ text "Exit" ]
+                ]
             ]
         , div
             [ class "table-responsive" ]

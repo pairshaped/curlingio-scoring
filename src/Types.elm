@@ -50,7 +50,8 @@ type alias Data =
 
 
 type alias Settings =
-    { sheets : List String
+    { eventName : String
+    , sheets : List String
     , currentDrawId : Int
     , nameChangeAllowed : Bool
     }
@@ -93,6 +94,7 @@ dataDecoder =
 settingsDecoder : Decoder Settings
 settingsDecoder =
     Decode.succeed Settings
+        |> required "event_name" string
         |> required "sheets" (list string)
         |> required "current_draw_id" int
         |> required "name_change_allowed" bool
