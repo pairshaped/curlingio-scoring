@@ -136,13 +136,13 @@
         {
           "id": 9,
           "team_name": "Team F",
-          "score": null,
+          "score": 1,
           "result": null
         },
         {
           "id": 10,
           "team_name": "Team A",
-          "score": null,
+          "score": 0,
           "result": null
         }
       ]
@@ -156,7 +156,7 @@
         {
           "id": 11,
           "team_name": "Team D",
-          "score": null,
+          "score": 2,
           "result": null
         },
         {
@@ -176,13 +176,13 @@
         {
           "id": 13,
           "team_name": "Team B",
-          "score": null,
+          "score": 1,
           "result": null
         },
         {
           "id": 14,
           "team_name": "Team G",
-          "score": null,
+          "score": 3,
           "result": null
         }
       ]
@@ -299,11 +299,15 @@
       "game_positions": [
         {
           "id": 27,
-          "team_name": "Team B"
+          "team_name": "Team B",
+          "score": null,
+          "result": null
         },
         {
           "id": 28,
-          "team_name": "Team D"
+          "team_name": "Team D",
+          "score": null,
+          "result": null
         }
       ]
     },

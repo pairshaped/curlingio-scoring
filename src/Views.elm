@@ -139,7 +139,24 @@ viewDrawSheet games drawId sheet =
 
 viewGame : Game -> Html Msg
 viewGame game =
-    a [ href "#", onClickPreventDefault (SelectGame game) ] [ text game.name ]
+    let
+        completed =
+            List.any (\gp -> gp.result /= NoResult) game.gamePositions
+
+        inProgress =
+            List.any (\gp -> gp.score /= Nothing && gp.result == NoResult) game.gamePositions
+
+        resultClass =
+            if completed then
+                "text-secondary"
+
+            else if inProgress then
+                "font-weight-bold"
+
+            else
+                ""
+    in
+    a [ href "#", class resultClass, onClickPreventDefault (SelectGame game) ] [ text game.name ]
 
 
 viewSelectedGame : Model -> Data -> Game -> Html Msg
