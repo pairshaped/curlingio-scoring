@@ -1,8 +1,8 @@
 module Views exposing (view)
 
 import Helpers exposing (..)
-import Html exposing (Html, a, button, div, h3, h4, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, disabled, href, max, min, required, style, type_, value)
+import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (class, disabled, href, id, max, min, style, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -12,41 +12,43 @@ import Types exposing (..)
 
 view : Model -> Html Msg
 view model =
-    case model.data of
-        NotAsked ->
-            viewNotReady "Initializing..."
+    div [ id "scoring" ]
+        [ case model.data of
+            NotAsked ->
+                viewNotReady "Initializing..."
 
-        Loading ->
-            viewNotReady "Loading..."
+            Loading ->
+                viewNotReady "Loading..."
 
-        Failure error ->
-            let
-                errorMessage =
-                    case error of
-                        Http.BadUrl string ->
-                            "Bad URL used to fetch games: " ++ string
+            Failure error ->
+                let
+                    errorMessage =
+                        case error of
+                            Http.BadUrl string ->
+                                "Bad URL used to fetch games: " ++ string
 
-                        Http.Timeout ->
-                            "Network timeout when trying to fetch games."
+                            Http.Timeout ->
+                                "Network timeout when trying to fetch games."
 
-                        Http.NetworkError ->
-                            "Network error when trying to fetch games."
+                            Http.NetworkError ->
+                                "Network error when trying to fetch games."
 
-                        Http.BadStatus int ->
-                            "Bad status response from server when trying to fetch games."
+                            Http.BadStatus int ->
+                                "Bad status response from server when trying to fetch games."
 
-                        Http.BadBody string ->
-                            "Bad body response from server when trying to fetch games: " ++ string
-            in
-            viewFetchError errorMessage
+                            Http.BadBody string ->
+                                "Bad body response from server when trying to fetch games: " ++ string
+                in
+                viewFetchError errorMessage
 
-        Success data ->
-            case model.selectedGame of
-                Just game ->
-                    viewSelectedGame model data game
+            Success data ->
+                case model.selectedGame of
+                    Just game ->
+                        viewSelectedGame model data game
 
-                Nothing ->
-                    viewData model data
+                    Nothing ->
+                        viewData model data
+        ]
 
 
 viewNotReady : String -> Html Msg
@@ -285,7 +287,7 @@ viewGamePosition gamePosition =
                 ]
                 []
             , div
-                [ class "btn-group btn-group-sm" ]
+                [ class "btn-group btn-group-sm scoring-result-button-group" ]
                 [ button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Won)
