@@ -16,9 +16,9 @@
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="scoring"></div>
   <script>
-    var app = Elm.Main.init({ node: document.getElementById("app"), flags: { url: "http://localhost:3000/api" } })
+    var scoring = Elm.Scoring.init({ node: document.getElementById("scoring"), flags: { url: "http://localhost:3000/api" } })
   </script>
 </body>
 </html>

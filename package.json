@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "nf start",
-    "client": "elm-live src/Main.elm --start-page=dev.html --open -- --output=dev.js",
+    "client": "elm-live src/Scoring.elm --start-page=dev.html --open -- --output=dev.js",
     "server": "json-server -w db.json -r routes.json"
   },
   "dependencies": {

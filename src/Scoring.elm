@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Scoring exposing (..)
 
 import Browser
 import Helpers exposing (..)
