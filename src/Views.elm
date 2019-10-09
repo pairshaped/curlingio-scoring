@@ -1,7 +1,7 @@
 module Views exposing (view)
 
 import Helpers exposing (..)
-import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, a, button, div, h3, h4, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, disabled, href, max, min, required, style, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
@@ -69,8 +69,10 @@ viewData : Model -> Data -> Html Msg
 viewData model data =
     div [ class "m-3" ]
         [ div
-            [ class "text-right mb-2" ]
-            [ button [ class "btn btn-sm btn-primary", onClick ReloadData ] [ text "Reload" ] ]
+            [ class "d-flex justify-content-between" ]
+            [ h4 [] [ text data.settings.eventName ]
+            , button [ class "btn btn-sm btn-primary mb-2", onClick ReloadData ] [ text "Reload" ]
+            ]
         , div
             [ class "table-responsive" ]
             [ table
