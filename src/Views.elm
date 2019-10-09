@@ -12,7 +12,16 @@ import Types exposing (..)
 
 view : Model -> Html Msg
 view model =
-    div [ id "scoring" ]
+    div
+        [ id "scoring"
+        , style "width" "100%"
+        , style "height" "100%"
+        , style "position" "absolute"
+        , style "top" "0"
+        , style "left" "0"
+        , style "z-index" "100"
+        , style "backgroup-color" "#fff"
+        ]
         [ case model.data of
             NotAsked ->
                 viewNotReady "Initializing..."
@@ -53,13 +62,13 @@ view model =
 
 viewNotReady : String -> Html Msg
 viewNotReady message =
-    p [] [ text message ]
+    p [ class "p-3" ] [ text message ]
 
 
 viewFetchError : String -> Html Msg
 viewFetchError message =
     div
-        []
+        [ class "p-3" ]
         [ p [] [ text message ]
         , button [ class "btn btn-primary", onClick ReloadData ] [ text "Reload" ]
         ]
@@ -67,10 +76,12 @@ viewFetchError message =
 
 viewData : Model -> Data -> Html Msg
 viewData model data =
-    div []
+    div
+        [ class "p-3" ]
         [ div
-            [ class "text-right" ]
-            [ button [ class "btn btn-sm btn-primary mb-2", onClick ReloadData ] [ text "Reload" ]
+            [ class "d-flex justify-content-between mb-2" ]
+            [ button [ class "btn btn-sm btn-primary", onClick ReloadData ] [ text "Reload" ]
+            , a [ href model.flags.exitUrl, class "btn btn-sm btn-secondary" ] [ text "Exit" ]
             ]
         , div
             [ class "table-responsive" ]

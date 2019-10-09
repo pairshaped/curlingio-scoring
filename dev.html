@@ -22,14 +22,12 @@
   </style>
 </head>
 <body>
-  <div class="container mt-3">
-    <div id="scoring"></div>
-  </div>
+  <div id="scoring"></div>
   <script>
     var scoring = Elm.Scoring.init(
       {
         node: document.getElementById("scoring"),
-        flags: { fetchUrl: "http://localhost:3000/db", patchUrl: "http://localhost:3000/games" }
+        flags: { fetchUrl: "http://localhost:3000/db", patchUrl: "http://localhost:3000/games", exitUrl: "about:blank" }
       }
     )
   </script>

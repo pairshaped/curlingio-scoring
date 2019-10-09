@@ -38,6 +38,7 @@ type alias Model =
 type alias Flags =
     { fetchUrl : String
     , patchUrl : String
+    , exitUrl : String
     }
 
 
