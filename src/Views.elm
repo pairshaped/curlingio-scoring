@@ -13,15 +13,22 @@ import Types exposing (..)
 view : Model -> Html Msg
 view model =
     div
-        [ id "scoring"
-        , style "width" "100%"
-        , style "height" "100%"
-        , style "position" "absolute"
-        , style "top" "0"
-        , style "left" "0"
-        , style "z-index" "100"
-        , style "backgroup-color" "#fff"
-        ]
+        (List.append
+            [ id "scoring" ]
+            (if model.fullScreen then
+                [ style "width" "100%"
+                , style "height" "100%"
+                , style "position" "fixed"
+                , style "top" "0"
+                , style "left" "0"
+                , style "z-index" "100"
+                , style "backgroup-color" "#fff"
+                ]
+
+             else
+                []
+            )
+        )
         [ case model.data of
             NotAsked ->
                 viewNotReady "Initializing..."
@@ -83,7 +90,15 @@ viewData model data =
             [ h5 [] [ text data.settings.eventName ]
             , div [ class "text-right" ]
                 [ button [ class "btn btn-sm btn-primary mr-2", onClick ReloadData ] [ text "Reload" ]
-                , a [ href model.flags.exitUrl, class "btn btn-sm btn-secondary" ] [ text "Exit" ]
+                , button [ class "btn btn-sm btn-secondary", onClick ToggleFullScreen ]
+                    [ text
+                        (if model.fullScreen then
+                            "Exit"
+
+                         else
+                            "Full Screen"
+                        )
+                    ]
                 ]
             ]
         , div

@@ -14,20 +14,22 @@
       -webkit-box-shadow: none !important;
     }
     .btn {
-      width: 80px;
+      min-width: 80px;
     }
     .scoring-result-button-group .btn {
-      width: 60px;
+      min-width: 60px;
     }
   </style>
 </head>
 <body>
-  <div id="scoring"></div>
+  <div class="container pt-2">
+    <div id="scoring"></div>
+  </div>
   <script>
     var scoring = Elm.Scoring.init(
       {
         node: document.getElementById("scoring"),
-        flags: { fetchUrl: "http://localhost:3000/db", patchUrl: "http://localhost:3000/games", exitUrl: "about:blank" }
+        flags: { fetchUrl: "http://localhost:3000/db", patchUrl: "http://localhost:3000/games" }
       }
     )
   </script>

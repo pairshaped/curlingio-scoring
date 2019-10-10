@@ -10,6 +10,7 @@ import RemoteData exposing (WebData)
 type Msg
     = GotData (WebData Data)
     | ReloadData
+    | ToggleFullScreen
     | PatchedGame (WebData Game)
     | SelectGame Game
     | CloseGame
@@ -32,13 +33,13 @@ type alias Model =
     , data : WebData Data
     , savedGame : WebData Game
     , selectedGame : Maybe Game
+    , fullScreen : Bool
     }
 
 
 type alias Flags =
     { fetchUrl : String
     , patchUrl : String
-    , exitUrl : String
     }
 
 

@@ -19,7 +19,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags NotAsked NotAsked Nothing, getData flags.fetchUrl )
+    ( Model flags NotAsked NotAsked Nothing False, getData flags.fetchUrl )
 
 
 
@@ -97,6 +97,9 @@ update msg model =
                             model.data
             in
             ( { model | selectedGame = selectedGame, savedGame = savedGame, data = updatedData }, Cmd.none )
+
+        ToggleFullScreen ->
+            ( { model | fullScreen = not model.fullScreen }, Cmd.none )
 
         SelectGame game ->
             ( { model | selectedGame = Just game, savedGame = NotAsked }, Cmd.none )
