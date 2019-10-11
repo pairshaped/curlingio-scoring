@@ -87,7 +87,6 @@ update msg model =
                         Success decodedGame ->
                             case model.data of
                                 Success decodedData ->
-                                    -- List.head decodedData.games
                                     Success { decodedData | games = List.map (updatedGame decodedGame) decodedData.games }
 
                                 _ ->
