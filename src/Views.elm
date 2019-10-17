@@ -332,12 +332,13 @@ viewGamePosition gamePosition =
                 ]
                 []
             , div
-                [ class "btn-group btn-group-sm scoring-result-button-group" ]
+                [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left" ]
                 [ button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Won)
+                    , style "margin-left" "-1"
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-success"
                             ++ (case gamePosition.result of
                                     Won ->
                                         " active"
@@ -352,7 +353,7 @@ viewGamePosition gamePosition =
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Lost)
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
                                     Lost ->
                                         " active"
@@ -365,9 +366,39 @@ viewGamePosition gamePosition =
                     [ text "Lost" ]
                 , button
                     [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition Conceded)
+                    , class
+                        ("btn btn-outline-danger"
+                            ++ (case gamePosition.result of
+                                    Conceded ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ text "Concede" ]
+                , button
+                    [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition Forfeited)
+                    , class
+                        ("btn btn-outline-danger"
+                            ++ (case gamePosition.result of
+                                    Forfeited ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ text "Forfeit" ]
+                , button
+                    [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Tied)
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-info"
                             ++ (case gamePosition.result of
                                     Tied ->
                                         " active"
@@ -382,7 +413,7 @@ viewGamePosition gamePosition =
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition NoResult)
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-secondary"
                             ++ (case gamePosition.result of
                                     NoResult ->
                                         " active"

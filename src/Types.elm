@@ -24,6 +24,8 @@ type Msg
 type GamePositionResult
     = Won
     | Lost
+    | Conceded
+    | Forfeited
     | Tied
     | NoResult
 
@@ -142,6 +144,12 @@ gamePositionResultDecoder =
                     "lost" ->
                         Decode.succeed Lost
 
+                    "forfeited" ->
+                        Decode.succeed Forfeited
+
+                    "conceded" ->
+                        Decode.succeed Conceded
+
                     "tied" ->
                         Decode.succeed Tied
 
@@ -179,6 +187,12 @@ encodeGamePositionResult gamePositionResult =
 
         Lost ->
             Encode.string "lost"
+
+        Forfeited ->
+            Encode.string "forfeited"
+
+        Conceded ->
+            Encode.string "conceded"
 
         Tied ->
             Encode.string "tied"
