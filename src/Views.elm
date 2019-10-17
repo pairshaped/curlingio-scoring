@@ -22,6 +22,7 @@ view model =
                 , style "top" "0"
                 , style "left" "0"
                 , style "z-index" "100"
+                , style "overflow-y" "auto"
                 , style "backgroup-color" "#fff"
                 ]
 
