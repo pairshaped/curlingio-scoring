@@ -317,6 +317,7 @@ viewGamePosition gamePosition =
             [ input
                 [ class "form-control mr-3"
                 , style "width" "60px"
+                , style "margin-top" "-1"
                 , type_ "number"
                 , min "0"
                 , max "99"
@@ -336,6 +337,7 @@ viewGamePosition gamePosition =
                 [ button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Won)
+                    , style "margin-top" "-1"
                     , style "margin-left" "-1"
                     , class
                         ("btn btn-outline-success"
@@ -352,6 +354,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Lost)
+                    , style "margin-top" "-1"
                     , class
                         ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
@@ -367,6 +370,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Conceded)
+                    , style "margin-top" "-1"
                     , class
                         ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
@@ -378,10 +382,13 @@ viewGamePosition gamePosition =
                                )
                         )
                     ]
-                    [ text "Concede" ]
+                    [ span [ class "d-none d-md-inline" ] [ text "Conceded" ]
+                    , span [ class "d-md-none" ] [ text "Con" ]
+                    ]
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Forfeited)
+                    , style "margin-top" "-1"
                     , class
                         ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
@@ -393,10 +400,13 @@ viewGamePosition gamePosition =
                                )
                         )
                     ]
-                    [ text "Forfeit" ]
+                    [ span [ class "d-none d-md-inline" ] [ text "Forfeited" ]
+                    , span [ class "d-md-none" ] [ text "For" ]
+                    ]
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Tied)
+                    , style "margin-top" "-1"
                     , class
                         ("btn btn-outline-info"
                             ++ (case gamePosition.result of
@@ -412,6 +422,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition NoResult)
+                    , style "margin-top" "-1"
                     , class
                         ("btn btn-outline-secondary"
                             ++ (case gamePosition.result of
