@@ -317,7 +317,7 @@ viewGamePosition gamePosition =
             [ input
                 [ class "form-control mr-3"
                 , style "width" "60px"
-                , style "margin-top" "-1"
+                , style "margin-top" "-1px"
                 , type_ "number"
                 , min "0"
                 , max "99"
@@ -337,8 +337,8 @@ viewGamePosition gamePosition =
                 [ button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Won)
-                    , style "margin-top" "-1"
-                    , style "margin-left" "-1"
+                    , style "margin-top" "-1px"
+                    , style "margin-left" "-1px"
                     , class
                         ("btn btn-outline-success"
                             ++ (case gamePosition.result of
@@ -354,7 +354,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Lost)
-                    , style "margin-top" "-1"
+                    , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
@@ -370,7 +370,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Conceded)
-                    , style "margin-top" "-1"
+                    , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
@@ -388,7 +388,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Forfeited)
-                    , style "margin-top" "-1"
+                    , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
@@ -406,7 +406,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Tied)
-                    , style "margin-top" "-1"
+                    , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-info"
                             ++ (case gamePosition.result of
@@ -422,7 +422,7 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition NoResult)
-                    , style "margin-top" "-1"
+                    , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-secondary"
                             ++ (case gamePosition.result of
