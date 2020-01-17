@@ -2,7 +2,7 @@ module Views exposing (view)
 
 import Helpers exposing (..)
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, disabled, href, id, max, min, style, type_, value)
+import Html.Attributes exposing (class, disabled, href, id, style, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -318,8 +318,8 @@ viewGamePosition gamePosition =
                 [ class "form-control mr-3"
                 , style "width" "60px"
                 , type_ "number"
-                , min "0"
-                , max "99"
+                , Html.Attributes.min "0"
+                , Html.Attributes.max "99"
                 , value
                     (case gamePosition.score of
                         Just val ->
