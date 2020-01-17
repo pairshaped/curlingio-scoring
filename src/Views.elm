@@ -22,6 +22,7 @@ view model =
                 , style "top" "0"
                 , style "left" "0"
                 , style "z-index" "100"
+                , style "overflow-y" "auto"
                 , style "backgroup-color" "#fff"
                 ]
 
@@ -317,6 +318,7 @@ viewGamePosition gamePosition =
             [ input
                 [ class "form-control mr-3"
                 , style "width" "60px"
+                , style "margin-top" "-1px"
                 , type_ "number"
                 , Html.Attributes.min "0"
                 , Html.Attributes.max "99"
@@ -332,12 +334,14 @@ viewGamePosition gamePosition =
                 ]
                 []
             , div
-                [ class "btn-group btn-group-sm scoring-result-button-group" ]
+                [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left" ]
                 [ button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Won)
+                    , style "margin-top" "-1px"
+                    , style "margin-left" "-1px"
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-success"
                             ++ (case gamePosition.result of
                                     Won ->
                                         " active"
@@ -351,8 +355,9 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition Lost)
+                    , style "margin-top" "-1px"
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-danger"
                             ++ (case gamePosition.result of
                                     Lost ->
                                         " active"
@@ -365,9 +370,46 @@ viewGamePosition gamePosition =
                     [ text "Lost" ]
                 , button
                     [ type_ "button"
-                    , onClick (UpdateGamePositionResult gamePosition Tied)
+                    , onClick (UpdateGamePositionResult gamePosition Conceded)
+                    , style "margin-top" "-1px"
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-danger"
+                            ++ (case gamePosition.result of
+                                    Conceded ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ span [ class "d-none d-md-inline" ] [ text "Conceded" ]
+                    , span [ class "d-md-none" ] [ text "Con" ]
+                    ]
+                , button
+                    [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition Forfeited)
+                    , style "margin-top" "-1px"
+                    , class
+                        ("btn btn-outline-danger"
+                            ++ (case gamePosition.result of
+                                    Forfeited ->
+                                        " active"
+
+                                    _ ->
+                                        ""
+                               )
+                        )
+                    ]
+                    [ span [ class "d-none d-md-inline" ] [ text "Forfeited" ]
+                    , span [ class "d-md-none" ] [ text "For" ]
+                    ]
+                , button
+                    [ type_ "button"
+                    , onClick (UpdateGamePositionResult gamePosition Tied)
+                    , style "margin-top" "-1px"
+                    , class
+                        ("btn btn-outline-info"
                             ++ (case gamePosition.result of
                                     Tied ->
                                         " active"
@@ -381,8 +423,9 @@ viewGamePosition gamePosition =
                 , button
                     [ type_ "button"
                     , onClick (UpdateGamePositionResult gamePosition NoResult)
+                    , style "margin-top" "-1px"
                     , class
-                        ("btn btn-info"
+                        ("btn btn-outline-secondary"
                             ++ (case gamePosition.result of
                                     NoResult ->
                                         " active"

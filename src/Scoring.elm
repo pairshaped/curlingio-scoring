@@ -189,6 +189,12 @@ update msg model =
                             Lost ->
                                 { gamePosition | result = Won }
 
+                            Forfeited ->
+                                { gamePosition | result = Won }
+
+                            Conceded ->
+                                { gamePosition | result = Won }
+
                             Tied ->
                                 { gamePosition | result = Tied }
 
