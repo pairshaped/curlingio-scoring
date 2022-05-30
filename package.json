@@ -6,9 +6,9 @@
   },
   "dependencies": {
     "elm": "^0.19.1-no-deps",
-    "elm-live": "^4.0.0",
+    "elm-live": "^4.0.2",
     "foreman": "^3.0.1",
-    "json-server": "^0.15.1",
-    "uglify-js": "^3.6.0"
+    "json-server": "^0.17.0",
+    "uglify-js": "^3.15.5"
   }
 }
