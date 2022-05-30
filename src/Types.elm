@@ -68,7 +68,7 @@ type alias Draw =
 
 
 type alias Game =
-    { id : Int
+    { id : String
     , drawId : Int
     , sheet : Int
     , name : String
@@ -114,7 +114,7 @@ drawDecoder =
 gameDecoder : Decoder Game
 gameDecoder =
     Decode.succeed Game
-        |> required "id" int
+        |> required "id" string
         |> required "draw_id" int
         |> required "sheet" int
         |> required "name" string
@@ -161,7 +161,7 @@ gamePositionResultDecoder =
 encodeGame : Game -> Encode.Value
 encodeGame game =
     Encode.object
-        [ ( "id", Encode.int game.id )
+        [ ( "id", Encode.string game.id )
         , ( "draw_id", Encode.int game.drawId )
         , ( "sheet", Encode.int game.sheet )
         , ( "name", Encode.string game.name )

@@ -49,7 +49,7 @@
   ],
   "games": [
     {
-      "id": 1,
+      "id": "1",
       "draw_id": 1,
       "sheet": 1,
       "name": "D vs G",
@@ -69,7 +69,7 @@
       ]
     },
     {
-      "id": 2,
+      "id": "2",
       "draw_id": 1,
       "sheet": 2,
       "name": "F vs C",
@@ -89,7 +89,7 @@
       ]
     },
     {
-      "id": 3,
+      "id": "3",
       "draw_id": 1,
       "sheet": 3,
       "name": "H vs A",
@@ -109,7 +109,7 @@
       ]
     },
     {
-      "id": 4,
+      "id": "4",
       "draw_id": 1,
       "sheet": 4,
       "name": "B vs E",
@@ -129,7 +129,7 @@
       ]
     },
     {
-      "id": 5,
+      "id": "5",
       "draw_id": 2,
       "sheet": 1,
       "name": "A vs F",
@@ -149,7 +149,7 @@
       ]
     },
     {
-      "id": 6,
+      "id": "6",
       "draw_id": 2,
       "sheet": 2,
       "name": "D vs E",
@@ -169,7 +169,7 @@
       ]
     },
     {
-      "id": 7,
+      "id": "7",
       "draw_id": 2,
       "sheet": 3,
       "name": "B vs G",
@@ -189,7 +189,7 @@
       ]
     },
     {
-      "id": 8,
+      "id": "8",
       "draw_id": 2,
       "sheet": 4,
       "name": "H vs C",
@@ -197,19 +197,19 @@
         {
           "id": 15,
           "team_name": "Team H",
-          "score": null,
+          "score": 1,
           "result": null
         },
         {
           "id": 16,
           "team_name": "Team C",
-          "score": null,
+          "score": 1,
           "result": null
         }
       ]
     },
     {
-      "id": 9,
+      "id": "9",
       "draw_id": 3,
       "sheet": 1,
       "name": "B vs H",
@@ -225,7 +225,7 @@
       ]
     },
     {
-      "id": 10,
+      "id": "10",
       "draw_id": 3,
       "sheet": 2,
       "name": "G vs A",
@@ -241,7 +241,7 @@
       ]
     },
     {
-      "id": 11,
+      "id": "11",
       "draw_id": 3,
       "sheet": 3,
       "name": "E vs C",
@@ -257,7 +257,7 @@
       ]
     },
     {
-      "id": 12,
+      "id": "12",
       "draw_id": 3,
       "sheet": 4,
       "name": "D vs F",
@@ -273,7 +273,7 @@
       ]
     },
     {
-      "id": 13,
+      "id": "13",
       "draw_id": 4,
       "sheet": 1,
       "name": "A vs C",
@@ -293,7 +293,7 @@
       ]
     },
     {
-      "id": 14,
+      "id": "14",
       "draw_id": 4,
       "sheet": 2,
       "name": "B vs D",
@@ -313,7 +313,7 @@
       ]
     },
     {
-      "id": 15,
+      "id": "15",
       "draw_id": 4,
       "sheet": 3,
       "name": "F vs H",
@@ -329,7 +329,7 @@
       ]
     },
     {
-      "id": 16,
+      "id": "16",
       "draw_id": 4,
       "sheet": 4,
       "name": "E vs G",
@@ -345,7 +345,7 @@
       ]
     },
     {
-      "id": 17,
+      "id": "17",
       "draw_id": 5,
       "sheet": 1,
       "name": "H vs D",
@@ -361,7 +361,7 @@
       ]
     },
     {
-      "id": 18,
+      "id": "18",
       "draw_id": 5,
       "sheet": 2,
       "name": "C vs G",
@@ -377,7 +377,7 @@
       ]
     },
     {
-      "id": 19,
+      "id": "19",
       "draw_id": 5,
       "sheet": 3,
       "name": "A vs E",
@@ -393,7 +393,7 @@
       ]
     },
     {
-      "id": 20,
+      "id": "20",
       "draw_id": 5,
       "sheet": 4,
       "name": "F vs B",
@@ -409,7 +409,7 @@
       ]
     },
     {
-      "id": 21,
+      "id": "21",
       "draw_id": 6,
       "sheet": 1,
       "name": "C vs B",
@@ -425,7 +425,7 @@
       ]
     },
     {
-      "id": 22,
+      "id": "22",
       "draw_id": 6,
       "sheet": 2,
       "name": "E vs H",
@@ -441,7 +441,7 @@
       ]
     },
     {
-      "id": 23,
+      "id": "23",
       "draw_id": 6,
       "sheet": 3,
       "name": "G vs F",
@@ -457,7 +457,7 @@
       ]
     },
     {
-      "id": 24,
+      "id": "24",
       "draw_id": 6,
       "sheet": 4,
       "name": "A vs D",
@@ -473,7 +473,7 @@
       ]
     },
     {
-      "id": 25,
+      "id": "25",
       "draw_id": 7,
       "sheet": 1,
       "name": "E vs F",
@@ -489,7 +489,7 @@
       ]
     },
     {
-      "id": 26,
+      "id": "26",
       "draw_id": 7,
       "sheet": 2,
       "name": "A vs B",
@@ -505,7 +505,7 @@
       ]
     },
     {
-      "id": 27,
+      "id": "27",
       "draw_id": 7,
       "sheet": 3,
       "name": "C vs D",
@@ -521,7 +521,7 @@
       ]
     },
     {
-      "id": 28,
+      "id": "28",
       "draw_id": 7,
       "sheet": 4,
       "name": "G vs H",
