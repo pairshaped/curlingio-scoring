@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "elm": "^0.19.1-no-deps",
-    "elm-live": "^4.0.2",
+    "elm-live": "github:wking-io/elm-live#e317b4914c471addea7243c47f28dcebe27a5d36",
     "foreman": "^3.0.1",
     "json-server": "^0.17.0",
     "uglify-js": "^3.15.5"
