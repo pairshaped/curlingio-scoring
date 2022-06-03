@@ -21,7 +21,9 @@ import RemoteData.Http
 
 type alias Model =
     { flags : Flags
-    , data : WebData Data
+    , settings : WebData Settings
+    , draws : WebData (List Draw)
+    , games : WebData (List Game)
     , savedGame : WebData Game
     , selectedGame : Maybe Game
     , fullScreen : Bool
@@ -29,8 +31,7 @@ type alias Model =
 
 
 type alias Flags =
-    { fetchUrl : String
-    , patchUrl : String
+    { baseUrl : String
     }
 
 
@@ -45,7 +46,6 @@ type alias Settings =
     { eventName : String
     , sheets : List String
     , currentDrawId : Int
-    , nameChangeAllowed : Bool
     }
 
 
@@ -88,21 +88,17 @@ type GamePositionResult
 -- DECODERS
 
 
-dataDecoder : Decoder Data
-dataDecoder =
-    Decode.succeed Data
-        |> required "settings" settingsDecoder
-        |> required "draws" (list drawDecoder)
-        |> required "games" (list gameDecoder)
-
-
 settingsDecoder : Decoder Settings
 settingsDecoder =
     Decode.succeed Settings
         |> required "event_name" string
         |> required "sheets" (list string)
         |> required "current_draw_id" int
-        |> required "name_change_allowed" bool
+
+
+drawsDecoder : Decoder (List Draw)
+drawsDecoder =
+    list drawDecoder
 
 
 drawDecoder : Decoder Draw
@@ -111,6 +107,11 @@ drawDecoder =
         |> required "id" int
         |> required "label" string
         |> required "starts_at" string
+
+
+gamesDecoder : Decoder (List Game)
+gamesDecoder =
+    list gameDecoder
 
 
 gameDecoder : Decoder Game
@@ -213,17 +214,49 @@ encodeGamePositionResult gamePositionResult =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags NotAsked NotAsked Nothing False, getData flags.fetchUrl )
+    ( Model flags NotAsked NotAsked NotAsked NotAsked Nothing False
+    , Cmd.batch
+        [ getSettings flags.baseUrl
+        , getDraws flags.baseUrl
+        , getGames flags.baseUrl
+        ]
+    )
 
 
-getData : String -> Cmd Msg
-getData url =
-    RemoteData.Http.get url GotData dataDecoder
+getSettings : String -> Cmd Msg
+getSettings baseUrl =
+    let
+        url =
+            baseUrl ++ "/settings"
+    in
+    RemoteData.Http.get url GotSettings settingsDecoder
+
+
+getDraws : String -> Cmd Msg
+getDraws baseUrl =
+    let
+        url =
+            baseUrl ++ "/draws"
+    in
+    RemoteData.Http.get url GotDraws drawsDecoder
+
+
+getGames : String -> Cmd Msg
+getGames baseUrl =
+    let
+        url =
+            baseUrl ++ "/games"
+    in
+    RemoteData.Http.get url GotGames gamesDecoder
 
 
 patchGame : String -> Game -> Cmd Msg
-patchGame url game =
-    RemoteData.Http.patch (url ++ "/" ++ game.id) PatchedGame gameDecoder (encodeGame game)
+patchGame baseUrl game =
+    let
+        url =
+            baseUrl ++ "/games/" ++ game.id
+    in
+    RemoteData.Http.patch url PatchedGame gameDecoder (encodeGame game)
 
 
 findGame : List Game -> Int -> Int -> Maybe Game
@@ -246,14 +279,14 @@ findDraw draws drawId =
 
 
 type Msg
-    = GotData (WebData Data)
+    = GotSettings (WebData Settings)
+    | GotDraws (WebData (List Draw))
+    | GotGames (WebData (List Game))
     | ReloadData
     | ToggleFullScreen
     | PatchedGame (WebData Game)
     | SelectGame Game
     | CloseGame
-    | UpdateGameName String
-    | ValidateGameName
     | UpdateGamePositionScore GamePosition String
     | UpdateGamePositionResult GamePosition GamePositionResult
     | SaveGame
@@ -262,28 +295,36 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotData data ->
-            let
-                selectedGame =
-                    case data of
-                        Success decodedData ->
-                            -- List.head decodedData.games
-                            Nothing
+        GotSettings response ->
+            ( { model | settings = response }, Cmd.none )
 
-                        _ ->
-                            Nothing
-            in
-            ( { model | data = data, selectedGame = selectedGame }, Cmd.none )
+        GotDraws response ->
+            ( { model | draws = response }, Cmd.none )
+
+        GotGames response ->
+            ( { model | games = response }, Cmd.none )
 
         ReloadData ->
-            ( { model | data = Loading, savedGame = NotAsked, selectedGame = Nothing }, getData model.flags.fetchUrl )
+            ( { model
+                | settings = Loading
+                , draws = Loading
+                , games = Loading
+                , savedGame = NotAsked
+                , selectedGame = Nothing
+              }
+            , Cmd.batch
+                [ getSettings model.flags.baseUrl
+                , getDraws model.flags.baseUrl
+                , getGames model.flags.baseUrl
+                ]
+            )
 
         SaveGame ->
             let
                 sendPatch =
                     case model.selectedGame of
                         Just game ->
-                            patchGame model.flags.patchUrl game
+                            patchGame model.flags.baseUrl game
 
                         Nothing ->
                             Cmd.none
@@ -315,20 +356,21 @@ update msg model =
                     else
                         game
 
-                updatedData =
+                updatedGames games =
                     case gameResponse of
                         Success decodedGame ->
-                            case model.data of
-                                Success decodedData ->
-                                    Success { decodedData | games = List.map (updatedGame decodedGame) decodedData.games }
-
-                                _ ->
-                                    model.data
+                            List.map (updatedGame decodedGame) games
 
                         _ ->
-                            model.data
+                            games
             in
-            ( { model | selectedGame = selectedGame, savedGame = savedGame, data = updatedData }, Cmd.none )
+            ( { model
+                | selectedGame = selectedGame
+                , savedGame = savedGame
+                , games = RemoteData.map updatedGames model.games
+              }
+            , Cmd.none
+            )
 
         ToggleFullScreen ->
             ( { model | fullScreen = not model.fullScreen }, Cmd.none )
@@ -338,43 +380,6 @@ update msg model =
 
         CloseGame ->
             ( { model | selectedGame = Nothing, savedGame = NotAsked }, Cmd.none )
-
-        UpdateGameName newName ->
-            let
-                updatedGame =
-                    case model.selectedGame of
-                        Just game ->
-                            Just { game | name = newName, changed = True, nameTaken = False }
-
-                        Nothing ->
-                            Nothing
-            in
-            ( { model | selectedGame = updatedGame }, Cmd.none )
-
-        ValidateGameName ->
-            let
-                games =
-                    case model.data of
-                        Success decodedData ->
-                            decodedData.games
-
-                        _ ->
-                            []
-
-                updatedGame =
-                    case model.selectedGame of
-                        Just game ->
-                            case findGameByName games game.id game.name of
-                                Just existingGame ->
-                                    Just { game | nameTaken = True }
-
-                                Nothing ->
-                                    Just { game | nameTaken = False }
-
-                        Nothing ->
-                            Nothing
-            in
-            ( { model | selectedGame = updatedGame }, Cmd.none )
 
         UpdateGamePositionScore onGamePosition newScore ->
             let
@@ -451,6 +456,12 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
+    let
+        mergeResponses settings draws games =
+            RemoteData.map (\a b c -> Data a b c) settings
+                |> RemoteData.andMap draws
+                |> RemoteData.andMap games
+    in
     div
         (List.append
             [ id "scoring" ]
@@ -469,7 +480,7 @@ view model =
                 []
             )
         )
-        [ case model.data of
+        [ case mergeResponses model.settings model.draws model.games of
             NotAsked ->
                 viewNotReady "Initializing..."
 
@@ -630,25 +641,6 @@ viewGame game =
 
 viewSelectedGame : Model -> Data -> Game -> Html Msg
 viewSelectedGame model data game =
-    let
-        editableGameName =
-            input
-                [ value game.name
-                , onInput UpdateGameName
-                , onBlur ValidateGameName
-                ]
-                []
-
-        nonEditableGameName =
-            span [] [ text game.name ]
-
-        gameName =
-            if data.settings.nameChangeAllowed then
-                editableGameName
-
-            else
-                nonEditableGameName
-    in
     div
         [ style "min-height" "100%"
         , style "min-height" "100vh"
@@ -668,7 +660,7 @@ viewSelectedGame model data game =
                             (List.append
                                 [ h3
                                     [ class "card-title" ]
-                                    [ gameName ]
+                                    [ text game.name ]
                                 , viewValidationError game
                                 , h6
                                     [ class "card-subtitle mb-2 text-muted" ]
