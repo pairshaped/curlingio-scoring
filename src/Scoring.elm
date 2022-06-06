@@ -46,6 +46,8 @@ type alias Settings =
     { eventName : String
     , sheets : List String
     , currentDrawId : Int
+    , endScoresEnabled : Bool
+    , shotByShotEnabled : Bool
     }
 
 
@@ -61,21 +63,21 @@ type alias Game =
     , drawId : Int
     , sheet : Int
     , name : String
-    , gamePositions : List GamePosition
+    , sides : List Side
     , changed : Bool
     , nameTaken : Bool
     }
 
 
-type alias GamePosition =
+type alias Side =
     { id : Int
     , teamName : String
     , score : Maybe Int
-    , result : GamePositionResult
+    , result : SideResult
     }
 
 
-type GamePositionResult
+type SideResult
     = Won
     | Lost
     | Conceded
@@ -94,6 +96,8 @@ settingsDecoder =
         |> required "event_name" string
         |> required "sheets" (list string)
         |> required "current_draw_id" int
+        |> required "end_scores_enabled" bool
+        |> required "shot_by_shot_enabled" bool
 
 
 drawsDecoder : Decoder (List Draw)
@@ -121,22 +125,22 @@ gameDecoder =
         |> required "draw_id" int
         |> required "sheet" int
         |> required "name" string
-        |> required "game_positions" (list gamePositionDecoder)
+        |> required "game_positions" (list sideDecoder)
         |> hardcoded False
         |> hardcoded False
 
 
-gamePositionDecoder : Decoder GamePosition
-gamePositionDecoder =
-    Decode.succeed GamePosition
+sideDecoder : Decoder Side
+sideDecoder =
+    Decode.succeed Side
         |> required "id" int
         |> required "team_name" string
         |> optional "score" (nullable int) Nothing
-        |> optional "result" gamePositionResultDecoder NoResult
+        |> optional "result" sideResultDecoder NoResult
 
 
-gamePositionResultDecoder : Decoder GamePositionResult
-gamePositionResultDecoder =
+sideResultDecoder : Decoder SideResult
+sideResultDecoder =
     Decode.string
         |> Decode.andThen
             (\str ->
@@ -172,23 +176,23 @@ encodeGame game =
         , ( "draw_id", Encode.int game.drawId )
         , ( "sheet", Encode.int game.sheet )
         , ( "name", Encode.string game.name )
-        , ( "game_positions", Encode.list encodeGamePosition game.gamePositions )
+        , ( "game_positions", Encode.list encodeSide game.sides )
         ]
 
 
-encodeGamePosition : GamePosition -> Encode.Value
-encodeGamePosition gamePosition =
+encodeSide : Side -> Encode.Value
+encodeSide side =
     Encode.object
-        [ ( "id", Encode.int gamePosition.id )
-        , ( "team_name", Encode.string gamePosition.teamName )
-        , ( "score", maybe Encode.int gamePosition.score )
-        , ( "result", encodeGamePositionResult gamePosition.result )
+        [ ( "id", Encode.int side.id )
+        , ( "team_name", Encode.string side.teamName )
+        , ( "score", maybe Encode.int side.score )
+        , ( "result", encodeSideResult side.result )
         ]
 
 
-encodeGamePositionResult : GamePositionResult -> Encode.Value
-encodeGamePositionResult gamePositionResult =
-    case gamePositionResult of
+encodeSideResult : SideResult -> Encode.Value
+encodeSideResult sideResult =
+    case sideResult of
         Won ->
             Encode.string "won"
 
@@ -287,8 +291,8 @@ type Msg
     | PatchedGame (WebData Game)
     | SelectGame Game
     | CloseGame
-    | UpdateGamePositionScore GamePosition String
-    | UpdateGamePositionResult GamePosition GamePositionResult
+    | UpdateSideScore Side String
+    | UpdateSideResult Side SideResult
     | SaveGame
 
 
@@ -381,10 +385,10 @@ update msg model =
         CloseGame ->
             ( { model | selectedGame = Nothing, savedGame = NotAsked }, Cmd.none )
 
-        UpdateGamePositionScore onGamePosition newScore ->
+        UpdateSideScore onSide newScore ->
             let
-                updatedGamePosition gamePosition =
-                    if gamePosition.id == onGamePosition.id then
+                updatedSide side =
+                    if side.id == onSide.id then
                         let
                             updatedScore =
                                 case String.toInt newScore of
@@ -398,51 +402,51 @@ update msg model =
                                     Nothing ->
                                         Nothing
                         in
-                        { gamePosition | score = updatedScore }
+                        { side | score = updatedScore }
 
                     else
-                        gamePosition
+                        side
 
                 updatedGame =
                     case model.selectedGame of
                         Just game ->
-                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions, changed = True }
+                            Just { game | sides = List.map updatedSide game.sides, changed = True }
 
                         Nothing ->
                             Nothing
             in
             ( { model | selectedGame = updatedGame }, Cmd.none )
 
-        UpdateGamePositionResult onGamePosition newResult ->
+        UpdateSideResult onSide newResult ->
             let
-                updatedGamePosition gamePosition =
-                    if gamePosition.id == onGamePosition.id then
-                        { gamePosition | result = newResult }
+                updatedSide side =
+                    if side.id == onSide.id then
+                        { side | result = newResult }
 
                     else
                         case newResult of
                             Won ->
-                                { gamePosition | result = Lost }
+                                { side | result = Lost }
 
                             Lost ->
-                                { gamePosition | result = Won }
+                                { side | result = Won }
 
                             Forfeited ->
-                                { gamePosition | result = Won }
+                                { side | result = Won }
 
                             Conceded ->
-                                { gamePosition | result = Won }
+                                { side | result = Won }
 
                             Tied ->
-                                { gamePosition | result = Tied }
+                                { side | result = Tied }
 
                             NoResult ->
-                                { gamePosition | result = NoResult }
+                                { side | result = NoResult }
 
                 updatedGame =
                     case model.selectedGame of
                         Just game ->
-                            Just { game | gamePositions = List.map updatedGamePosition game.gamePositions, changed = True }
+                            Just { game | sides = List.map updatedSide game.sides, changed = True }
 
                         Nothing ->
                             Nothing
@@ -621,10 +625,10 @@ viewGame : Game -> Html Msg
 viewGame game =
     let
         completed =
-            List.any (\gp -> gp.result /= NoResult) game.gamePositions
+            List.any (\gp -> gp.result /= NoResult) game.sides
 
         inProgress =
-            List.any (\gp -> gp.score /= Nothing && gp.result == NoResult) game.gamePositions
+            List.any (\gp -> gp.score /= Nothing && gp.result == NoResult) game.sides
 
         resultClass =
             if completed then
@@ -676,7 +680,7 @@ viewSelectedGame model data game =
                                 , hr [] []
                                 , viewGameSaveError model
                                 ]
-                                (List.map viewGamePosition game.gamePositions)
+                                (List.map viewSide game.sides)
                             )
                         , div
                             [ class "d-flex justify-content-between card-footer" ]
@@ -737,13 +741,13 @@ viewValidationError game =
         span [ style "display" "none" ] []
 
 
-viewGamePosition : GamePosition -> Html Msg
-viewGamePosition gamePosition =
+viewSide : Side -> Html Msg
+viewSide side =
     p
         []
         [ h5
             [ class "card-text" ]
-            [ text gamePosition.teamName ]
+            [ text side.teamName ]
         , div
             [ class "d-flex" ]
             [ input
@@ -754,26 +758,26 @@ viewGamePosition gamePosition =
                 , Html.Attributes.min "0"
                 , Html.Attributes.max "99"
                 , value
-                    (case gamePosition.score of
+                    (case side.score of
                         Just val ->
                             String.fromInt val
 
                         Nothing ->
                             ""
                     )
-                , onInput (UpdateGamePositionScore gamePosition)
+                , onInput (UpdateSideScore side)
                 ]
                 []
             , div
                 [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left" ]
                 [ button
                     [ type_ "button"
-                    , onClick (UpdateGamePositionResult gamePosition Won)
+                    , onClick (UpdateSideResult side Won)
                     , style "margin-top" "-1px"
                     , style "margin-left" "-1px"
                     , class
                         ("btn btn-outline-success"
-                            ++ (case gamePosition.result of
+                            ++ (case side.result of
                                     Won ->
                                         " active"
 
@@ -785,11 +789,11 @@ viewGamePosition gamePosition =
                     [ text "Won" ]
                 , button
                     [ type_ "button"
-                    , onClick (UpdateGamePositionResult gamePosition Lost)
+                    , onClick (UpdateSideResult side Lost)
                     , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-danger"
-                            ++ (case gamePosition.result of
+                            ++ (case side.result of
                                     Lost ->
                                         " active"
 
@@ -801,11 +805,11 @@ viewGamePosition gamePosition =
                     [ text "Lost" ]
                 , button
                     [ type_ "button"
-                    , onClick (UpdateGamePositionResult gamePosition Conceded)
+                    , onClick (UpdateSideResult side Conceded)
                     , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-danger"
-                            ++ (case gamePosition.result of
+                            ++ (case side.result of
                                     Conceded ->
                                         " active"
 
@@ -819,11 +823,11 @@ viewGamePosition gamePosition =
                     ]
                 , button
                     [ type_ "button"
-                    , onClick (UpdateGamePositionResult gamePosition Forfeited)
+                    , onClick (UpdateSideResult side Forfeited)
                     , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-danger"
-                            ++ (case gamePosition.result of
+                            ++ (case side.result of
                                     Forfeited ->
                                         " active"
 
@@ -837,11 +841,11 @@ viewGamePosition gamePosition =
                     ]
                 , button
                     [ type_ "button"
-                    , onClick (UpdateGamePositionResult gamePosition Tied)
+                    , onClick (UpdateSideResult side Tied)
                     , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-info"
-                            ++ (case gamePosition.result of
+                            ++ (case side.result of
                                     Tied ->
                                         " active"
 
@@ -853,11 +857,11 @@ viewGamePosition gamePosition =
                     [ text "Tied" ]
                 , button
                     [ type_ "button"
-                    , onClick (UpdateGamePositionResult gamePosition NoResult)
+                    , onClick (UpdateSideResult side NoResult)
                     , style "margin-top" "-1px"
                     , class
                         ("btn btn-outline-secondary"
-                            ++ (case gamePosition.result of
+                            ++ (case side.result of
                                     NoResult ->
                                         " active"
 

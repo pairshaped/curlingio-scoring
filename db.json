@@ -6,8 +6,10 @@
       "Sheet 3",
       "Sheet 4"
     ],
-    "current_draw_id": 2,
-    "event_name": "Monday Night Open"
+    "current_draw_id": 3,
+    "event_name": "Monday Night Open",
+    "end_scores_enabled": true,
+    "shot_by_shot_enabled": false
   },
   "draws": [
     {
@@ -137,13 +139,13 @@
           "id": 9,
           "team_name": "Team F",
           "score": 1,
-          "result": null
+          "result": "won"
         },
         {
           "id": 10,
           "team_name": "Team A",
           "score": 0,
-          "result": null
+          "result": "lost"
         }
       ]
     },
@@ -157,13 +159,13 @@
           "id": 11,
           "team_name": "Team D",
           "score": 2,
-          "result": null
+          "result": "won"
         },
         {
           "id": 12,
           "team_name": "Team E",
           "score": null,
-          "result": null
+          "result": "lost"
         }
       ]
     },
@@ -177,13 +179,13 @@
           "id": 13,
           "team_name": "Team B",
           "score": 1,
-          "result": null
+          "result": "lost"
         },
         {
           "id": 14,
           "team_name": "Team G",
           "score": 3,
-          "result": null
+          "result": "won"
         }
       ]
     },
@@ -197,13 +199,13 @@
           "id": 15,
           "team_name": "Team H",
           "score": 1,
-          "result": null
+          "result": "tied"
         },
         {
           "id": 16,
           "team_name": "Team C",
           "score": 1,
-          "result": null
+          "result": "tied"
         }
       ]
     },
@@ -215,11 +217,15 @@
       "game_positions": [
         {
           "id": 17,
-          "team_name": "Team B"
+          "team_name": "Team B",
+          "score": 1,
+          "result": null
         },
         {
           "id": 18,
-          "team_name": "Team H"
+          "team_name": "Team H",
+          "score": null,
+          "result": null
         }
       ]
     },
@@ -231,11 +237,15 @@
       "game_positions": [
         {
           "id": 19,
-          "team_name": "Team G"
+          "team_name": "Team G",
+          "score": null,
+          "result": null
         },
         {
           "id": 20,
-          "team_name": "Team A"
+          "team_name": "Team A",
+          "score": 1,
+          "result": null
         }
       ]
     },
@@ -247,11 +257,15 @@
       "game_positions": [
         {
           "id": 21,
-          "team_name": "Team E"
+          "team_name": "Team E",
+          "score": 1,
+          "result": null
         },
         {
           "id": 22,
-          "team_name": "Team C"
+          "team_name": "Team C",
+          "score": 1,
+          "result": null
         }
       ]
     },
@@ -263,11 +277,15 @@
       "game_positions": [
         {
           "id": 23,
-          "team_name": "Team D"
+          "team_name": "Team D",
+          "score": 2,
+          "result": null
         },
         {
           "id": 24,
-          "team_name": "Team F"
+          "team_name": "Team F",
+          "score": 1,
+          "result": null
         }
       ]
     },
