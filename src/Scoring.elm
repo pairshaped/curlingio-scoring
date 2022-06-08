@@ -2,7 +2,7 @@ module Scoring exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, disabled, href, id, style, type_, value)
+import Html.Attributes exposing (class, disabled, href, id, style, tabindex, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -65,15 +65,16 @@ type alias Game =
     , name : String
     , sides : List Side
     , changed : Bool
-    , nameTaken : Bool
     }
 
 
 type alias Side =
     { id : Int
     , teamName : String
+    , firstHammer : Bool
     , score : Maybe Int
     , result : SideResult
+    , endScores : List (Maybe Int)
     }
 
 
@@ -127,7 +128,6 @@ gameDecoder =
         |> required "name" string
         |> required "game_positions" (list sideDecoder)
         |> hardcoded False
-        |> hardcoded False
 
 
 sideDecoder : Decoder Side
@@ -135,8 +135,10 @@ sideDecoder =
     Decode.succeed Side
         |> required "id" int
         |> required "team_name" string
+        |> required "first_hammer" bool
         |> optional "score" (nullable int) Nothing
         |> optional "result" sideResultDecoder NoResult
+        |> optional "end_scores" (list (nullable int)) []
 
 
 sideResultDecoder : Decoder SideResult
@@ -172,11 +174,7 @@ sideResultDecoder =
 encodeGame : Game -> Encode.Value
 encodeGame game =
     Encode.object
-        [ ( "id", Encode.string game.id )
-        , ( "draw_id", Encode.int game.drawId )
-        , ( "sheet", Encode.int game.sheet )
-        , ( "name", Encode.string game.name )
-        , ( "game_positions", Encode.list encodeSide game.sides )
+        [ ( "game_positions", Encode.list encodeSide game.sides )
         ]
 
 
@@ -185,8 +183,21 @@ encodeSide side =
     Encode.object
         [ ( "id", Encode.int side.id )
         , ( "team_name", Encode.string side.teamName )
+        , ( "first_hammer", Encode.bool side.firstHammer )
         , ( "score", maybe Encode.int side.score )
         , ( "result", encodeSideResult side.result )
+        , ( "end_scores"
+          , Encode.list
+                (\score ->
+                    case score of
+                        Just s ->
+                            Encode.int s
+
+                        Nothing ->
+                            Encode.null
+                )
+                side.endScores
+          )
         ]
 
 
@@ -293,6 +304,7 @@ type Msg
     | CloseGame
     | UpdateSideScore Side String
     | UpdateSideResult Side SideResult
+    | UpdateSideEndScore Int Int String
     | SaveGame
 
 
@@ -385,10 +397,10 @@ update msg model =
         CloseGame ->
             ( { model | selectedGame = Nothing, savedGame = NotAsked }, Cmd.none )
 
-        UpdateSideScore onSide newScore ->
+        UpdateSideScore sideIndex newScore ->
             let
                 updatedSide side =
-                    if side.id == onSide.id then
+                    if side.id == sideIndex.id then
                         let
                             updatedScore =
                                 case String.toInt newScore of
@@ -417,10 +429,10 @@ update msg model =
             in
             ( { model | selectedGame = updatedGame }, Cmd.none )
 
-        UpdateSideResult onSide newResult ->
+        UpdateSideResult sideIndex newResult ->
             let
                 updatedSide side =
-                    if side.id == onSide.id then
+                    if side.id == sideIndex.id then
                         { side | result = newResult }
 
                     else
@@ -447,6 +459,62 @@ update msg model =
                     case model.selectedGame of
                         Just game ->
                             Just { game | sides = List.map updatedSide game.sides, changed = True }
+
+                        Nothing ->
+                            Nothing
+            in
+            ( { model | selectedGame = updatedGame }, Cmd.none )
+
+        UpdateSideEndScore sideIndex endIndex newScoreStr ->
+            let
+                newScoreStrFixed =
+                    if String.length newScoreStr > 1 then
+                        String.right 1 newScoreStr
+
+                    else
+                        newScoreStr
+
+                newScore =
+                    case String.toInt newScoreStrFixed of
+                        Just s ->
+                            if s < 0 then
+                                Just 0
+
+                            else if s > 8 then
+                                Just 8
+
+                            else
+                                Just s
+
+                        Nothing ->
+                            Nothing
+
+                updatedScore side =
+                    { side
+                        | score =
+                            List.filterMap identity side.endScores
+                                |> List.sum
+                                |> Just
+                    }
+
+                updatedSide idx side =
+                    if idx == sideIndex then
+                        { side | endScores = List.Extra.updateAt endIndex (\_ -> newScore) side.endScores }
+                            |> updatedScore
+
+                    else if Maybe.withDefault 0 newScore > 0 then
+                        -- If we have a score greater than 0, then make sure the other team scores 0
+                        { side | endScores = List.Extra.updateAt endIndex (\_ -> Just 0) side.endScores }
+                            |> updatedScore
+
+                    else
+                        side
+                            |> updatedScore
+
+                updatedGame =
+                    case model.selectedGame of
+                        Just game ->
+                            Just { game | sides = List.indexedMap updatedSide game.sides, changed = True }
 
                         Nothing ->
                             Nothing
@@ -648,57 +716,17 @@ viewSelectedGame model data game =
     div
         [ style "min-height" "100%"
         , style "min-height" "100vh"
-        , style "background-color" "#444"
-        , class "pt-5"
+        , class "pt-2"
         ]
         [ div
             [ class "container" ]
             [ div
                 [ class "row justify-content-center align-items-center" ]
-                [ div
-                    [ class "col-12 col-md-10 col-lg-8 col-xl-6" ]
-                    [ div
-                        [ class "card" ]
-                        [ div
-                            [ class "card-body" ]
-                            (List.append
-                                [ h3
-                                    [ class "card-title" ]
-                                    [ text game.name ]
-                                , viewValidationError game
-                                , h6
-                                    [ class "card-subtitle mb-2 text-muted" ]
-                                    [ text
-                                        (case findDraw data.draws game.drawId of
-                                            Just draw ->
-                                                "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+                [ if data.settings.endScoresEnabled then
+                    viewSidesWithEndScores model data game
 
-                                            Nothing ->
-                                                "Unknown Draw"
-                                        )
-                                    ]
-                                , hr [] []
-                                , viewGameSaveError model
-                                ]
-                                (List.map viewSide game.sides)
-                            )
-                        , div
-                            [ class "d-flex justify-content-between card-footer" ]
-                            [ button
-                                [ class "btn btn-secondary"
-                                , disabled (model.savedGame == Loading)
-                                , onClick CloseGame
-                                ]
-                                [ text "Cancel" ]
-                            , button
-                                [ class "btn btn-primary"
-                                , disabled (not game.changed || game.nameTaken || model.savedGame == Loading)
-                                , onClick SaveGame
-                                ]
-                                [ text "Save" ]
-                            ]
-                        ]
-                    ]
+                  else
+                    viewSides model data game
                 ]
             ]
         ]
@@ -732,145 +760,284 @@ viewGameSaveError model =
             span [ style "display" "none" ] []
 
 
-viewValidationError : Game -> Html Msg
-viewValidationError game =
-    if game.nameTaken then
-        div [ class "text-danger mt-n2 mb-3" ] [ text "Game name has already been taken." ]
-
-    else
-        span [ style "display" "none" ] []
-
-
-viewSide : Side -> Html Msg
-viewSide side =
-    p
-        []
-        [ h5
-            [ class "card-text" ]
-            [ text side.teamName ]
-        , div
-            [ class "d-flex" ]
-            [ input
-                [ class "form-control mr-3"
-                , style "width" "60px"
-                , style "margin-top" "-1px"
-                , type_ "number"
-                , Html.Attributes.min "0"
-                , Html.Attributes.max "99"
-                , value
-                    (case side.score of
-                        Just val ->
-                            String.fromInt val
-
-                        Nothing ->
-                            ""
-                    )
-                , onInput (UpdateSideScore side)
-                ]
+viewSides : Model -> Data -> Game -> Html Msg
+viewSides model data game =
+    let
+        viewSide : Side -> Html Msg
+        viewSide side =
+            p
                 []
+                [ h5
+                    [ class "card-text" ]
+                    [ text side.teamName ]
+                , div
+                    [ class "d-flex" ]
+                    [ input
+                        [ class "form-control mr-3"
+                        , style "width" "60px"
+                        , style "margin-top" "-1px"
+                        , type_ "number"
+                        , Html.Attributes.min "0"
+                        , Html.Attributes.max "99"
+                        , value
+                            (case side.score of
+                                Just val ->
+                                    String.fromInt val
+
+                                Nothing ->
+                                    ""
+                            )
+                        , onInput (UpdateSideScore side)
+                        ]
+                        []
+                    , div
+                        [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left" ]
+                        [ button
+                            [ type_ "button"
+                            , onClick (UpdateSideResult side Won)
+                            , style "margin-top" "-1px"
+                            , style "margin-left" "-1px"
+                            , class
+                                ("btn btn-outline-success"
+                                    ++ (case side.result of
+                                            Won ->
+                                                " active"
+
+                                            _ ->
+                                                ""
+                                       )
+                                )
+                            ]
+                            [ text "Won" ]
+                        , button
+                            [ type_ "button"
+                            , onClick (UpdateSideResult side Lost)
+                            , style "margin-top" "-1px"
+                            , class
+                                ("btn btn-outline-danger"
+                                    ++ (case side.result of
+                                            Lost ->
+                                                " active"
+
+                                            _ ->
+                                                ""
+                                       )
+                                )
+                            ]
+                            [ text "Lost" ]
+                        , button
+                            [ type_ "button"
+                            , onClick (UpdateSideResult side Conceded)
+                            , style "margin-top" "-1px"
+                            , class
+                                ("btn btn-outline-danger"
+                                    ++ (case side.result of
+                                            Conceded ->
+                                                " active"
+
+                                            _ ->
+                                                ""
+                                       )
+                                )
+                            ]
+                            [ span [ class "d-none d-md-inline" ] [ text "Conceded" ]
+                            , span [ class "d-md-none" ] [ text "Con" ]
+                            ]
+                        , button
+                            [ type_ "button"
+                            , onClick (UpdateSideResult side Forfeited)
+                            , style "margin-top" "-1px"
+                            , class
+                                ("btn btn-outline-danger"
+                                    ++ (case side.result of
+                                            Forfeited ->
+                                                " active"
+
+                                            _ ->
+                                                ""
+                                       )
+                                )
+                            ]
+                            [ span [ class "d-none d-md-inline" ] [ text "Forfeited" ]
+                            , span [ class "d-md-none" ] [ text "For" ]
+                            ]
+                        , button
+                            [ type_ "button"
+                            , onClick (UpdateSideResult side Tied)
+                            , style "margin-top" "-1px"
+                            , class
+                                ("btn btn-outline-info"
+                                    ++ (case side.result of
+                                            Tied ->
+                                                " active"
+
+                                            _ ->
+                                                ""
+                                       )
+                                )
+                            ]
+                            [ text "Tied" ]
+                        , button
+                            [ type_ "button"
+                            , onClick (UpdateSideResult side NoResult)
+                            , style "margin-top" "-1px"
+                            , class
+                                ("btn btn-outline-secondary"
+                                    ++ (case side.result of
+                                            NoResult ->
+                                                " active"
+
+                                            _ ->
+                                                ""
+                                       )
+                                )
+                            ]
+                            [ text "TBD" ]
+                        ]
+                    ]
+                ]
+    in
+    div
+        [ class "col-12 col-md-10 col-lg-8 col-xl-6" ]
+        [ div
+            [ class "card" ]
+            [ div
+                [ class "card-body" ]
+                (List.append
+                    [ h3
+                        [ class "card-title" ]
+                        [ text game.name ]
+                    , h6
+                        [ class "card-subtitle mb-2 text-muted" ]
+                        [ text
+                            (case findDraw data.draws game.drawId of
+                                Just draw ->
+                                    "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+
+                                Nothing ->
+                                    "Unknown Draw"
+                            )
+                        ]
+                    , hr [] []
+                    , viewGameSaveError model
+                    ]
+                    (List.map viewSide game.sides)
+                )
             , div
-                [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left" ]
+                [ class "d-flex justify-content-between card-footer" ]
                 [ button
-                    [ type_ "button"
-                    , onClick (UpdateSideResult side Won)
-                    , style "margin-top" "-1px"
-                    , style "margin-left" "-1px"
-                    , class
-                        ("btn btn-outline-success"
-                            ++ (case side.result of
-                                    Won ->
-                                        " active"
-
-                                    _ ->
-                                        ""
-                               )
-                        )
+                    [ class "btn btn-secondary"
+                    , disabled (model.savedGame == Loading)
+                    , onClick CloseGame
                     ]
-                    [ text "Won" ]
+                    [ text "Cancel" ]
                 , button
-                    [ type_ "button"
-                    , onClick (UpdateSideResult side Lost)
-                    , style "margin-top" "-1px"
-                    , class
-                        ("btn btn-outline-danger"
-                            ++ (case side.result of
-                                    Lost ->
-                                        " active"
+                    [ class "btn btn-primary"
+                    , disabled (not game.changed || model.savedGame == Loading)
+                    , onClick SaveGame
+                    ]
+                    [ text "Save" ]
+                ]
+            ]
+        ]
 
-                                    _ ->
+
+viewSidesWithEndScores : Model -> Data -> Game -> Html Msg
+viewSidesWithEndScores model data game =
+    let
+        numberOfEnds : Int
+        numberOfEnds =
+            case List.head game.sides of
+                Just side ->
+                    List.length side.endScores
+
+                Nothing ->
+                    10
+
+        viewEndHeader : Int -> Html Msg
+        viewEndHeader endNumber =
+            th [ class "text-center" ] [ text (String.fromInt endNumber) ]
+
+        viewSideEnds : Int -> Side -> Html Msg
+        viewSideEnds sideIndex side =
+            let
+                viewEndForSide : Int -> Html Msg
+                viewEndForSide endNumber =
+                    let
+                        onTabIndex =
+                            ((sideIndex + endNumber) * 2) - sideIndex - 1
+                    in
+                    td [ class "justify-content-center", style "width" "48px" ]
+                        [ input
+                            [ class "form-control"
+                            , style "width" "36px"
+                            , tabindex onTabIndex
+                            , value
+                                (case List.Extra.getAt (endNumber - 1) side.endScores of
+                                    Just val ->
+                                        case val of
+                                            Just v ->
+                                                String.fromInt v
+
+                                            Nothing ->
+                                                ""
+
+                                    Nothing ->
                                         ""
-                               )
+                                )
+                            , onInput (UpdateSideEndScore sideIndex (endNumber - 1))
+                            ]
+                            []
+                        ]
+            in
+            tr []
+                (td [] [ text side.teamName ] :: List.map viewEndForSide (List.range 1 numberOfEnds))
+    in
+    div
+        [ class "col-12 col-xl-10" ]
+        [ div
+            [ class "card" ]
+            [ div
+                [ class "card-body" ]
+                (List.append
+                    [ h3
+                        [ class "card-title" ]
+                        [ text game.name ]
+                    , h6
+                        [ class "card-subtitle mb-2 text-muted" ]
+                        [ text
+                            (case findDraw data.draws game.drawId of
+                                Just draw ->
+                                    "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+
+                                Nothing ->
+                                    "Unknown Draw"
+                            )
+                        ]
+                    , hr [] []
+                    , viewGameSaveError model
+                    ]
+                    [ table [ class "table table-sm table-bordered" ]
+                        (tr []
+                            (th [] [ text "" ] :: List.map viewEndHeader (List.range 1 numberOfEnds))
+                            :: List.indexedMap viewSideEnds game.sides
                         )
                     ]
-                    [ text "Lost" ]
+                )
+            , div
+                [ class "d-flex justify-content-between card-footer" ]
+                [ button
+                    [ class "btn btn-secondary"
+                    , disabled (model.savedGame == Loading)
+                    , onClick CloseGame
+                    ]
+                    [ text "Cancel" ]
                 , button
-                    [ type_ "button"
-                    , onClick (UpdateSideResult side Conceded)
-                    , style "margin-top" "-1px"
-                    , class
-                        ("btn btn-outline-danger"
-                            ++ (case side.result of
-                                    Conceded ->
-                                        " active"
-
-                                    _ ->
-                                        ""
-                               )
-                        )
+                    [ class "btn btn-primary"
+                    , disabled (not game.changed || model.savedGame == Loading)
+                    , onClick SaveGame
                     ]
-                    [ span [ class "d-none d-md-inline" ] [ text "Conceded" ]
-                    , span [ class "d-md-none" ] [ text "Con" ]
-                    ]
-                , button
-                    [ type_ "button"
-                    , onClick (UpdateSideResult side Forfeited)
-                    , style "margin-top" "-1px"
-                    , class
-                        ("btn btn-outline-danger"
-                            ++ (case side.result of
-                                    Forfeited ->
-                                        " active"
-
-                                    _ ->
-                                        ""
-                               )
-                        )
-                    ]
-                    [ span [ class "d-none d-md-inline" ] [ text "Forfeited" ]
-                    , span [ class "d-md-none" ] [ text "For" ]
-                    ]
-                , button
-                    [ type_ "button"
-                    , onClick (UpdateSideResult side Tied)
-                    , style "margin-top" "-1px"
-                    , class
-                        ("btn btn-outline-info"
-                            ++ (case side.result of
-                                    Tied ->
-                                        " active"
-
-                                    _ ->
-                                        ""
-                               )
-                        )
-                    ]
-                    [ text "Tied" ]
-                , button
-                    [ type_ "button"
-                    , onClick (UpdateSideResult side NoResult)
-                    , style "margin-top" "-1px"
-                    , class
-                        ("btn btn-outline-secondary"
-                            ++ (case side.result of
-                                    NoResult ->
-                                        " active"
-
-                                    _ ->
-                                        ""
-                               )
-                        )
-                    ]
-                    [ text "TBD" ]
+                    [ text "Save" ]
                 ]
             ]
         ]
