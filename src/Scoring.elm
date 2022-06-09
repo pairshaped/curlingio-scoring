@@ -2,7 +2,7 @@ module Scoring exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, disabled, href, id, style, tabindex, type_, value)
+import Html.Attributes exposing (class, classList, disabled, href, id, style, tabindex, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -336,6 +336,92 @@ sideResultColor result =
 
         NoResult ->
             "secondary"
+
+
+sideWithHammerInEnd : List Side -> Int -> Int
+sideWithHammerInEnd sides endIndex =
+    -- TODO: This function feels frikin ridiculous. Need to unwrap these nested maybes.
+    case ( List.Extra.getAt 0 sides, List.Extra.getAt 1 sides ) of
+        ( Just top, Just bot ) ->
+            -- Figures out which side has hammer for a specific end (index).
+            -- For example, you can pass in both sides and an endIndex of 4, and we'll figure out who won the 3rd end, and return which side index gets hammer in the 4th (0 or 1)
+            if endIndex == 0 then
+                -- First hammer (LSFE)
+                if top.firstHammer then
+                    0
+
+                else
+                    -- Either bottom has first hammer, or one isn't set and we default to bottom position
+                    1
+
+            else
+                case ( List.Extra.getAt (endIndex - 1) top.endScores, List.Extra.getAt (endIndex - 1) bot.endScores ) of
+                    ( Just topScore_, Just botScore_ ) ->
+                        case ( topScore_, botScore_ ) of
+                            ( Just topScore, Just botScore ) ->
+                                if topScore < botScore then
+                                    -- top lost previous end, so top has next hammer
+                                    0
+
+                                else if topScore > botScore then
+                                    -- top won previous end, so bot has next hammer
+                                    1
+
+                                else
+                                    -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
+                                    sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+
+                            ( Nothing, Just _ ) ->
+                                -- top lost previous end, so bot has next hammer
+                                0
+
+                            ( Just _, Nothing ) ->
+                                -- bot lost previous end, so bot has next hammer
+                                1
+
+                            ( Nothing, Nothing ) ->
+                                -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
+                                sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+
+                    ( Nothing, Just botScore_ ) ->
+                        -- No top score found in index
+                        case botScore_ of
+                            Just botScore ->
+                                if botScore > 0 then
+                                    -- top lost previous end, give top next hammer
+                                    0
+
+                                else
+                                    -- tied, recurse
+                                    sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+
+                            Nothing ->
+                                -- tied, recurse
+                                sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+
+                    ( Just topScore_, Nothing ) ->
+                        -- No bot score found in index
+                        case topScore_ of
+                            Just topScore ->
+                                if topScore > 0 then
+                                    -- top won previous end, give bot next hammer
+                                    1
+
+                                else
+                                    -- tied, recurse
+                                    sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+
+                            Nothing ->
+                                -- tied, recurse
+                                sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+
+                    ( Nothing, Nothing ) ->
+                        -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
+                        sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+
+        _ ->
+            -- We don't have enough sides, but default to bottom side hammer anyways.
+            1
 
 
 
@@ -1042,8 +1128,17 @@ viewSidesWithEndScores model data game =
                     let
                         onTabIndex =
                             ((sideIndex + endNumber) * 2) - sideIndex - 1
+
+                        hasHammer =
+                            sideWithHammerInEnd game.sides (endNumber - 1) == sideIndex
                     in
-                    td [ class "justify-content-center", style "width" "48px" ]
+                    td
+                        [ classList
+                            [ ( "justify-content-center", True )
+                            , ( "bg-hammer", hasHammer )
+                            ]
+                        , style "width" "46px"
+                        ]
                         [ input
                             [ class "form-control"
                             , style "width" "36px"
@@ -1093,9 +1188,20 @@ viewSidesWithEndScores model data game =
                             )
                         ]
                         [ text (sideResultForDisplay result) ]
+
+                scoreForDisplay =
+                    case side.score of
+                        Just score ->
+                            "(" ++ String.fromInt score ++ ")"
+
+                        Nothing ->
+                            ""
             in
             div []
-                [ h5 [] [ text side.teamName ]
+                [ h5 [ class (side.rockColor ++ "-rock") ]
+                    [ span [ class "pr-3" ] [ text side.teamName ]
+                    , span [] [ text scoreForDisplay ]
+                    ]
                 , div
                     [ class "d-flex" ]
                     [ div
@@ -1137,7 +1243,6 @@ viewSidesWithEndScores model data game =
                         )
                     ]
                 , hr [] []
-                , h5 [] [ text "Game State" ]
                 , div [ class "d-flex justify-content-between" ] (List.map viewSideState game.sides)
                 ]
             , div

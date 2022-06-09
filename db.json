@@ -40,7 +40,7 @@
             2,
             0,
             1,
-            null,
+            0,
             null,
             null,
             null
@@ -51,7 +51,7 @@
           "team_name": "Team G",
           "rock_color": "yellow",
           "first_hammer": true,
-          "score": 6,
+          "score": 7,
           "result": "won",
           "end_scores": [
             2,
@@ -60,7 +60,7 @@
             0,
             2,
             0,
-            2,
+            3,
             null,
             null,
             null
@@ -127,8 +127,8 @@
           "team_name": "Team H",
           "rock_color": "red",
           "first_hammer": false,
-          "score": 9,
-          "result": null,
+          "score": 10,
+          "result": "tied",
           "end_scores": [
             3,
             0,
@@ -137,9 +137,9 @@
             2,
             0,
             3,
-            null,
-            null,
-            null
+            0,
+            1,
+            0
           ]
         },
         {
@@ -147,8 +147,8 @@
           "team_name": "Team A",
           "rock_color": "yellow",
           "first_hammer": true,
-          "score": 5,
-          "result": null,
+          "score": 10,
+          "result": "tied",
           "end_scores": [
             0,
             2,
@@ -157,9 +157,9 @@
             0,
             1,
             0,
-            null,
-            null,
-            null
+            4,
+            0,
+            1
           ]
         }
       ]
@@ -175,19 +175,19 @@
           "team_name": "Team B",
           "rock_color": "red",
           "first_hammer": false,
-          "score": 5,
-          "result": null,
+          "score": 10,
+          "result": "won",
           "end_scores": [
             1,
             3,
             0,
             1,
             0,
-            null,
-            null,
-            null,
-            null,
-            null
+            2,
+            1,
+            0,
+            2,
+            0
           ]
         },
         {
@@ -195,19 +195,19 @@
           "team_name": "Team E",
           "rock_color": "yellow",
           "first_hammer": true,
-          "score": 5,
-          "result": null,
+          "score": 7,
+          "result": "lost",
           "end_scores": [
             0,
             0,
             2,
             0,
             3,
-            null,
-            null,
-            null,
-            null,
-            null
+            0,
+            0,
+            1,
+            0,
+            1
           ]
         }
       ]
