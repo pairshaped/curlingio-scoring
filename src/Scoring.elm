@@ -991,7 +991,10 @@ viewSidesWithEndScores model data game =
                         ]
             in
             tr []
-                (td [] [ text side.teamName ] :: List.map viewEndForSide (List.range 1 numberOfEnds))
+                (td [ class "p-2" ] [ text side.teamName ]
+                    :: List.map viewEndForSide (List.range 1 numberOfEnds)
+                    ++ [ td [ class "text-center p-2" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
+                )
     in
     div
         [ class "col-12 col-xl-10" ]
@@ -1019,7 +1022,10 @@ viewSidesWithEndScores model data game =
                     ]
                     [ table [ class "table table-sm table-bordered" ]
                         (tr []
-                            (th [] [ text "" ] :: List.map viewEndHeader (List.range 1 numberOfEnds))
+                            (th [] [ text "" ]
+                                :: List.map viewEndHeader (List.range 1 numberOfEnds)
+                                ++ [ th [ style "width" "50px" ] [ text "Total" ] ]
+                            )
                             :: List.indexedMap viewSideEnds game.sides
                         )
                     ]
