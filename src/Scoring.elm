@@ -1,7 +1,7 @@
 module Scoring exposing (..)
 
 import Browser
-import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, option, p, span, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, disabled, href, id, style, tabindex, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
@@ -294,6 +294,50 @@ findDraw draws drawId =
     List.Extra.find (\draw -> draw.id == drawId) draws
 
 
+sideResultForDisplay : SideResult -> String
+sideResultForDisplay result =
+    case result of
+        Won ->
+            "Won"
+
+        Lost ->
+            "Lost"
+
+        Conceded ->
+            "Conceded"
+
+        Forfeited ->
+            "Forfeited"
+
+        Tied ->
+            "Tied"
+
+        NoResult ->
+            "TBD"
+
+
+sideResultColor : SideResult -> String
+sideResultColor result =
+    case result of
+        Won ->
+            "success"
+
+        Lost ->
+            "danger"
+
+        Conceded ->
+            "danger"
+
+        Forfeited ->
+            "danger"
+
+        Tied ->
+            "info"
+
+        NoResult ->
+            "secondary"
+
+
 
 -- UPDATE
 
@@ -547,6 +591,8 @@ update msg model =
 
                         Nothing ->
                             Nothing
+
+                -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
             ( { model | selectedGame = updatedGame }, Cmd.none )
 
@@ -1025,6 +1071,38 @@ viewSidesWithEndScores model data game =
                     :: List.map viewEndForSide (List.range 1 numberOfEnds)
                     ++ [ td [ class "text-center p-2" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
                 )
+
+        viewSideState : Side -> Html Msg
+        viewSideState side =
+            let
+                viewResultButton : SideResult -> Html Msg
+                viewResultButton result =
+                    button
+                        [ type_ "button"
+                        , onClick (UpdateSideResult side result)
+                        , style "margin-top" "-1px"
+                        , style "margin-left" "-1px"
+                        , class
+                            (("btn btn-outline-" ++ sideResultColor result)
+                                ++ (if side.result == result then
+                                        " active"
+
+                                    else
+                                        ""
+                                   )
+                            )
+                        ]
+                        [ text (sideResultForDisplay result) ]
+            in
+            div []
+                [ h5 [] [ text side.teamName ]
+                , div
+                    [ class "d-flex" ]
+                    [ div
+                        [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
+                        (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
+                    ]
+                ]
     in
     div
         [ class "col-12 col-xl-10" ]
@@ -1032,24 +1110,23 @@ viewSidesWithEndScores model data game =
             [ class "card" ]
             [ div
                 [ class "card-body" ]
-                (List.append
-                    [ h3
-                        [ class "card-title" ]
-                        [ text game.name ]
-                    , h6
-                        [ class "card-subtitle mb-2 text-muted" ]
-                        [ text
-                            (case findDraw data.draws game.drawId of
-                                Just draw ->
-                                    "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+                [ h3
+                    [ class "card-title" ]
+                    [ text game.name ]
+                , h6
+                    [ class "card-subtitle mb-2 text-muted" ]
+                    [ text
+                        (case findDraw data.draws game.drawId of
+                            Just draw ->
+                                "Draw " ++ draw.label ++ " - " ++ draw.startsAt
 
-                                Nothing ->
-                                    "Unknown Draw"
-                            )
-                        ]
-                    , hr [] []
-                    , viewGameSaveError model
+                            Nothing ->
+                                "Unknown Draw"
+                        )
                     ]
+                , hr [] []
+                , viewGameSaveError model
+                , div [ class "table-responsive" ]
                     [ table [ class "table table-sm table-bordered" ]
                         (tr []
                             (th [] [ text "" ]
@@ -1059,7 +1136,10 @@ viewSidesWithEndScores model data game =
                             :: List.indexedMap viewSideEnds game.sides
                         )
                     ]
-                )
+                , hr [] []
+                , h5 [] [ text "Game State" ]
+                , div [ class "d-flex justify-content-between" ] (List.map viewSideState game.sides)
+                ]
             , div
                 [ class "d-flex justify-content-between card-footer" ]
                 [ button
