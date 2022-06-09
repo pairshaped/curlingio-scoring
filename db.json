@@ -9,6 +9,7 @@
     "current_draw_id": 1,
     "event_name": "Monday Night Open",
     "end_scores_enabled": true,
+    "number_of_ends": 10,
     "shot_by_shot_enabled": false
   },
   "draws": [
@@ -28,6 +29,7 @@
         {
           "id": 1,
           "team_name": "Team D",
+          "rock_color": "red",
           "first_hammer": false,
           "score": 15,
           "result": "won",
@@ -47,6 +49,7 @@
         {
           "id": 2,
           "team_name": "Team G",
+          "rock_color": "yellow",
           "first_hammer": true,
           "score": 8,
           "result": "lost",
@@ -74,23 +77,41 @@
         {
           "id": 3,
           "team_name": "Team F",
+          "rock_color": "red",
           "first_hammer": false,
-          "score": 3,
+          "score": 2,
+          "result": null,
           "end_scores": [
+            2,
             0,
-            3,
-            0
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
           ]
         },
         {
           "id": 4,
           "team_name": "Team C",
+          "rock_color": "yellow",
           "first_hammer": true,
-          "score": 4,
+          "score": 1,
+          "result": null,
           "end_scores": [
-            2,
             0,
-            2
+            1,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
           ]
         }
       ]
@@ -104,12 +125,42 @@
         {
           "id": 5,
           "team_name": "Team H",
-          "first_hammer": false
+          "rock_color": "red",
+          "first_hammer": false,
+          "score": 9,
+          "result": null,
+          "end_scores": [
+            3,
+            0,
+            1,
+            0,
+            2,
+            0,
+            3,
+            null,
+            null,
+            null
+          ]
         },
         {
           "id": 8,
           "team_name": "Team A",
-          "first_hammer": true
+          "rock_color": "yellow",
+          "first_hammer": true,
+          "score": 5,
+          "result": null,
+          "end_scores": [
+            0,
+            2,
+            0,
+            2,
+            0,
+            1,
+            0,
+            null,
+            null,
+            null
+          ]
         }
       ]
     },
@@ -122,12 +173,42 @@
         {
           "id": 7,
           "team_name": "Team B",
-          "first_hammer": false
+          "rock_color": "red",
+          "first_hammer": false,
+          "score": 5,
+          "result": null,
+          "end_scores": [
+            1,
+            3,
+            0,
+            1,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
         },
         {
           "id": 8,
           "team_name": "Team E",
-          "first_hammer": true
+          "rock_color": "yellow",
+          "first_hammer": true,
+          "score": 5,
+          "result": null,
+          "end_scores": [
+            0,
+            0,
+            2,
+            0,
+            3,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
         }
       ]
     }

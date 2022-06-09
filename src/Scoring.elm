@@ -47,6 +47,7 @@ type alias Settings =
     , sheets : List String
     , currentDrawId : Int
     , endScoresEnabled : Bool
+    , numberOfEnds : Int
     , shotByShotEnabled : Bool
     }
 
@@ -71,6 +72,7 @@ type alias Game =
 type alias Side =
     { id : Int
     , teamName : String
+    , rockColor : String
     , firstHammer : Bool
     , score : Maybe Int
     , result : SideResult
@@ -98,6 +100,7 @@ settingsDecoder =
         |> required "sheets" (list string)
         |> required "current_draw_id" int
         |> required "end_scores_enabled" bool
+        |> optional "number_of_ends" int 10
         |> required "shot_by_shot_enabled" bool
 
 
@@ -135,6 +138,7 @@ sideDecoder =
     Decode.succeed Side
         |> required "id" int
         |> required "team_name" string
+        |> required "rock_color" string
         |> required "first_hammer" bool
         |> optional "score" (nullable int) Nothing
         |> optional "result" sideResultDecoder NoResult
@@ -183,6 +187,7 @@ encodeSide side =
     Encode.object
         [ ( "id", Encode.int side.id )
         , ( "team_name", Encode.string side.teamName )
+        , ( "rock_color", Encode.string side.rockColor )
         , ( "first_hammer", Encode.bool side.firstHammer )
         , ( "score", maybe Encode.int side.score )
         , ( "result", encodeSideResult side.result )
@@ -392,7 +397,31 @@ update msg model =
             ( { model | fullScreen = not model.fullScreen }, Cmd.none )
 
         SelectGame game ->
-            ( { model | selectedGame = Just game, savedGame = NotAsked }, Cmd.none )
+            let
+                -- Fill in any missing ends
+                fillEndScores es =
+                    let
+                        minEnds =
+                            case model.settings of
+                                Success settings ->
+                                    settings.numberOfEnds
+
+                                _ ->
+                                    10
+                    in
+                    if List.length es < 10 then
+                        es ++ List.map (\_ -> Nothing) (List.range 1 (minEnds - List.length es))
+
+                    else
+                        es
+
+                updatedSide side =
+                    { side | endScores = fillEndScores side.endScores }
+
+                updatedGame =
+                    { game | sides = List.map updatedSide game.sides }
+            in
+            ( { model | selectedGame = Just updatedGame, savedGame = NotAsked }, Cmd.none )
 
         CloseGame ->
             ( { model | selectedGame = Nothing, savedGame = NotAsked }, Cmd.none )
@@ -950,6 +979,7 @@ viewSidesWithEndScores model data game =
             case List.head game.sides of
                 Just side ->
                     List.length side.endScores
+                        |> max data.settings.numberOfEnds
 
                 Nothing ->
                     10
@@ -991,7 +1021,7 @@ viewSidesWithEndScores model data game =
                         ]
             in
             tr []
-                (td [ class "p-2" ] [ text side.teamName ]
+                (td [ class ("p-2 " ++ side.rockColor ++ "-rock") ] [ text side.teamName ]
                     :: List.map viewEndForSide (List.range 1 numberOfEnds)
                     ++ [ td [ class "text-center p-2" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
                 )
