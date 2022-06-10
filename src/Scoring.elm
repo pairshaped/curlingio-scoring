@@ -25,7 +25,7 @@ type alias Model =
     , draws : WebData (List Draw)
     , games : WebData (List Game)
     , savedGame : WebData Game
-    , selectedGame : Maybe Game
+    , selectedGame : WebData Game
     , fullScreen : Bool
     }
 
@@ -234,7 +234,7 @@ encodeSideResult sideResult =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags NotAsked NotAsked NotAsked NotAsked Nothing False
+    ( Model flags NotAsked NotAsked NotAsked NotAsked NotAsked False
     , Cmd.batch
         [ getSettings flags.baseUrl
         , getDraws flags.baseUrl
@@ -268,6 +268,15 @@ getGames baseUrl =
             baseUrl ++ "/games"
     in
     RemoteData.Http.get url GotGames gamesDecoder
+
+
+getGame : String -> String -> Cmd Msg
+getGame baseUrl id =
+    let
+        url =
+            baseUrl ++ "/games/" ++ id
+    in
+    RemoteData.Http.get url GotGame gameDecoder
 
 
 patchGame : String -> Game -> Cmd Msg
@@ -441,6 +450,7 @@ type Msg
     | ToggleFullScreen
     | PatchedGame (WebData Game)
     | SelectGame Game
+    | GotGame (WebData Game)
     | CloseGame
     | UpdateSideScore Side String
     | UpdateSideResult Side SideResult
@@ -466,7 +476,7 @@ update msg model =
                 , draws = Loading
                 , games = Loading
                 , savedGame = NotAsked
-                , selectedGame = Nothing
+                , selectedGame = NotAsked
               }
             , Cmd.batch
                 [ getSettings model.flags.baseUrl
@@ -479,24 +489,16 @@ update msg model =
             let
                 sendPatch =
                     case model.selectedGame of
-                        Just game ->
+                        Success game ->
                             patchGame model.flags.baseUrl game
 
-                        Nothing ->
+                        _ ->
                             Cmd.none
             in
             ( { model | savedGame = Loading }, sendPatch )
 
         PatchedGame gameResponse ->
             let
-                selectedGame =
-                    case gameResponse of
-                        Success decodedGame ->
-                            Nothing
-
-                        _ ->
-                            model.selectedGame
-
                 savedGame =
                     case gameResponse of
                         Success decodedGame ->
@@ -521,7 +523,7 @@ update msg model =
                             games
             in
             ( { model
-                | selectedGame = selectedGame
+                | selectedGame = gameResponse
                 , savedGame = savedGame
                 , games = RemoteData.map updatedGames model.games
               }
@@ -532,6 +534,9 @@ update msg model =
             ( { model | fullScreen = not model.fullScreen }, Cmd.none )
 
         SelectGame game ->
+            ( { model | selectedGame = Loading }, getGame model.flags.baseUrl game.id )
+
+        GotGame response ->
             let
                 -- Fill in any missing ends
                 fillEndScores es =
@@ -553,13 +558,13 @@ update msg model =
                 updatedSide side =
                     { side | endScores = fillEndScores side.endScores }
 
-                updatedGame =
+                updatedGame game =
                     { game | sides = List.map updatedSide game.sides }
             in
-            ( { model | selectedGame = Just updatedGame, savedGame = NotAsked }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame response, savedGame = NotAsked }, Cmd.none )
 
         CloseGame ->
-            ( { model | selectedGame = Nothing, savedGame = NotAsked }, Cmd.none )
+            ( { model | selectedGame = NotAsked, savedGame = NotAsked }, Cmd.none )
 
         UpdateSideScore sideIndex newScore ->
             let
@@ -583,15 +588,10 @@ update msg model =
                     else
                         side
 
-                updatedGame =
-                    case model.selectedGame of
-                        Just game ->
-                            Just { game | sides = List.map updatedSide game.sides, changed = True }
-
-                        Nothing ->
-                            Nothing
+                updatedGame game =
+                    { game | sides = List.map updatedSide game.sides, changed = True }
             in
-            ( { model | selectedGame = updatedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
         UpdateSideResult sideIndex newResult ->
             let
@@ -619,15 +619,10 @@ update msg model =
                             NoResult ->
                                 { side | result = NoResult }
 
-                updatedGame =
-                    case model.selectedGame of
-                        Just game ->
-                            Just { game | sides = List.map updatedSide game.sides, changed = True }
-
-                        Nothing ->
-                            Nothing
+                updatedGame game =
+                    { game | sides = List.map updatedSide game.sides, changed = True }
             in
-            ( { model | selectedGame = updatedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
         UpdateSideEndScore sideIndex endIndex newScoreStr ->
             let
@@ -675,17 +670,12 @@ update msg model =
                         side
                             |> updatedScore
 
-                updatedGame =
-                    case model.selectedGame of
-                        Just game ->
-                            Just { game | sides = List.indexedMap updatedSide game.sides, changed = True }
-
-                        Nothing ->
-                            Nothing
+                updatedGame game =
+                    { game | sides = List.indexedMap updatedSide game.sides, changed = True }
 
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
-            ( { model | selectedGame = updatedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
 
 
@@ -748,10 +738,13 @@ view model =
 
             Success data ->
                 case model.selectedGame of
-                    Just game ->
+                    Success game ->
                         viewSelectedGame model data game
 
-                    Nothing ->
+                    Loading ->
+                        viewNotReady "Loading game..."
+
+                    _ ->
                         viewData model data
         ]
 
@@ -812,7 +805,7 @@ viewHeader settings =
         [ tr
             []
             (th [ style "min-width" "60px" ] [ text "Draw" ]
-                :: th [ style "min-width" "170px" ] [ text "Starts at" ]
+                :: th [ style "min-width" "170px" ] [ text "Starts" ]
                 :: List.map viewSheet settings.sheets
             )
         ]
@@ -1169,7 +1162,7 @@ viewSidesWithEndScores model data game =
             tr []
                 (td [ class ("p-2 " ++ side.rockColor ++ "-rock") ] [ text side.teamName ]
                     :: List.map viewEndForSide (List.range 1 numberOfEnds)
-                    ++ [ td [ class "text-center p-2" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
+                    ++ [ th [ class "text-center px-2", style "padding-top" "12px" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
                 )
 
         viewSideState : Side -> Html Msg

@@ -24,15 +24,15 @@
       "id": "1",
       "draw_id": 1,
       "sheet": 1,
-      "name": "D vs G",
+      "name": "A vs B",
       "game_positions": [
         {
           "id": 1,
-          "team_name": "Team D",
+          "team_name": "Team A",
           "rock_color": "red",
           "first_hammer": false,
           "score": 11,
-          "result": "conceded",
+          "result": null,
           "end_scores": [
             0,
             6,
@@ -48,11 +48,11 @@
         },
         {
           "id": 2,
-          "team_name": "Team G",
+          "team_name": "Team B",
           "rock_color": "yellow",
           "first_hammer": true,
           "score": 7,
-          "result": "won",
+          "result": null,
           "end_scores": [
             2,
             0,
@@ -72,11 +72,11 @@
       "id": "2",
       "draw_id": 1,
       "sheet": 2,
-      "name": "F vs C",
+      "name": "C vs D",
       "game_positions": [
         {
           "id": 3,
-          "team_name": "Team F",
+          "team_name": "Team C",
           "rock_color": "red",
           "first_hammer": false,
           "score": 2,
@@ -96,7 +96,7 @@
         },
         {
           "id": 4,
-          "team_name": "Team C",
+          "team_name": "Team D",
           "rock_color": "yellow",
           "first_hammer": true,
           "score": 1,
@@ -120,11 +120,11 @@
       "id": "3",
       "draw_id": 1,
       "sheet": 3,
-      "name": "H vs A",
+      "name": "E vs F",
       "game_positions": [
         {
           "id": 5,
-          "team_name": "Team H",
+          "team_name": "Team E",
           "rock_color": "red",
           "first_hammer": false,
           "score": 10,
@@ -144,7 +144,7 @@
         },
         {
           "id": 8,
-          "team_name": "Team A",
+          "team_name": "Team F",
           "rock_color": "yellow",
           "first_hammer": true,
           "score": 10,
@@ -168,11 +168,11 @@
       "id": "4",
       "draw_id": 1,
       "sheet": 4,
-      "name": "B vs E",
+      "name": "G vs H",
       "game_positions": [
         {
           "id": 7,
-          "team_name": "Team B",
+          "team_name": "Team G",
           "rock_color": "red",
           "first_hammer": false,
           "score": 10,
@@ -192,7 +192,7 @@
         },
         {
           "id": 8,
-          "team_name": "Team E",
+          "team_name": "Team H",
           "rock_color": "yellow",
           "first_hammer": true,
           "score": 7,
