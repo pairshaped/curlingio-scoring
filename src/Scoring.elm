@@ -338,7 +338,7 @@ sideResultColor result =
             "secondary"
 
 
-sideWithHammerInEnd : List Side -> Int -> Int
+sideWithHammerInEnd : List Side -> Int -> Maybe Int
 sideWithHammerInEnd sides endIndex =
     -- TODO: This function feels frikin ridiculous. Need to unwrap these nested maybes.
     case ( List.Extra.getAt 0 sides, List.Extra.getAt 1 sides ) of
@@ -348,11 +348,11 @@ sideWithHammerInEnd sides endIndex =
             if endIndex == 0 then
                 -- First hammer (LSFE)
                 if top.firstHammer then
-                    0
+                    Just 0
 
                 else
                     -- Either bottom has first hammer, or one isn't set and we default to bottom position
-                    1
+                    Just 1
 
             else
                 case ( List.Extra.getAt (endIndex - 1) top.endScores, List.Extra.getAt (endIndex - 1) bot.endScores ) of
@@ -361,11 +361,11 @@ sideWithHammerInEnd sides endIndex =
                             ( Just topScore, Just botScore ) ->
                                 if topScore < botScore then
                                     -- top lost previous end, so top has next hammer
-                                    0
+                                    Just 0
 
                                 else if topScore > botScore then
                                     -- top won previous end, so bot has next hammer
-                                    1
+                                    Just 1
 
                                 else
                                     -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
@@ -373,15 +373,16 @@ sideWithHammerInEnd sides endIndex =
 
                             ( Nothing, Just _ ) ->
                                 -- top lost previous end, so bot has next hammer
-                                0
+                                Just 0
 
                             ( Just _, Nothing ) ->
                                 -- bot lost previous end, so bot has next hammer
-                                1
+                                Just 1
 
                             ( Nothing, Nothing ) ->
                                 -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                                sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                                -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                                Nothing
 
                     ( Nothing, Just botScore_ ) ->
                         -- No top score found in index
@@ -389,7 +390,7 @@ sideWithHammerInEnd sides endIndex =
                             Just botScore ->
                                 if botScore > 0 then
                                     -- top lost previous end, give top next hammer
-                                    0
+                                    Just 0
 
                                 else
                                     -- tied, recurse
@@ -397,7 +398,8 @@ sideWithHammerInEnd sides endIndex =
 
                             Nothing ->
                                 -- tied, recurse
-                                sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                                -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                                Nothing
 
                     ( Just topScore_, Nothing ) ->
                         -- No bot score found in index
@@ -405,7 +407,7 @@ sideWithHammerInEnd sides endIndex =
                             Just topScore ->
                                 if topScore > 0 then
                                     -- top won previous end, give bot next hammer
-                                    1
+                                    Just 1
 
                                 else
                                     -- tied, recurse
@@ -413,15 +415,18 @@ sideWithHammerInEnd sides endIndex =
 
                             Nothing ->
                                 -- tied, recurse
-                                sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                                -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                                Nothing
 
                     ( Nothing, Nothing ) ->
                         -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                        sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                        -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                        Nothing
 
         _ ->
             -- We don't have enough sides, but default to bottom side hammer anyways.
-            1
+            -- Just 1
+            Nothing
 
 
 
@@ -1130,7 +1135,7 @@ viewSidesWithEndScores model data game =
                             ((sideIndex + endNumber) * 2) - sideIndex - 1
 
                         hasHammer =
-                            sideWithHammerInEnd game.sides (endNumber - 1) == sideIndex
+                            sideWithHammerInEnd game.sides (endNumber - 1) == Just sideIndex
                     in
                     td
                         [ classList
@@ -1198,7 +1203,7 @@ viewSidesWithEndScores model data game =
                             ""
             in
             div []
-                [ h5 [ class (side.rockColor ++ "-rock") ]
+                [ h6 [ class (side.rockColor ++ "-rock") ]
                     [ span [ class "pr-3" ] [ text side.teamName ]
                     , span [] [ text scoreForDisplay ]
                     ]
