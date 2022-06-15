@@ -2,7 +2,7 @@ module Scoring exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, classList, disabled, href, id, style, tabindex, type_, value)
+import Html.Attributes exposing (class, classList, disabled, href, id, style, tabindex, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -49,6 +49,7 @@ type alias Settings =
     , endScoresEnabled : Bool
     , numberOfEnds : Int
     , shotByShotEnabled : Bool
+    , rockColors : List RockColor
     }
 
 
@@ -80,6 +81,12 @@ type alias Side =
     }
 
 
+type alias RockColor =
+    { label : String
+    , value : String
+    }
+
+
 type SideResult
     = Won
     | Lost
@@ -102,6 +109,7 @@ settingsDecoder =
         |> required "end_scores_enabled" bool
         |> optional "number_of_ends" int 10
         |> required "shot_by_shot_enabled" bool
+        |> required "rock_colors" (list rockColorDecoder)
 
 
 drawsDecoder : Decoder (List Draw)
@@ -115,6 +123,13 @@ drawDecoder =
         |> required "id" int
         |> required "label" string
         |> required "starts_at" string
+
+
+rockColorDecoder : Decoder RockColor
+rockColorDecoder =
+    Decode.succeed RockColor
+        |> required "label" string
+        |> required "value" string
 
 
 gamesDecoder : Decoder (List Game)
@@ -243,6 +258,25 @@ init flags =
     )
 
 
+errorMessage : Http.Error -> String
+errorMessage error =
+    case error of
+        Http.BadUrl string ->
+            "Bad URL used: " ++ string
+
+        Http.Timeout ->
+            "Network timeout. Please check your internet connection."
+
+        Http.NetworkError ->
+            "Network error. Please check your internet connection."
+
+        Http.BadStatus int ->
+            "Bad status response from server. Please contact Curling I/O support if the issue persists for more than a few minutes."
+
+        Http.BadBody string ->
+            "Bad body response from server. Please contact Curling I/O support if the issue persists for more than a few minutes. Details: \"" ++ string ++ "\""
+
+
 getSettings : String -> Cmd Msg
 getSettings baseUrl =
     let
@@ -345,6 +379,18 @@ sideResultColor result =
 
         NoResult ->
             "secondary"
+
+
+rockColorForLabel : List RockColor -> String -> Maybe RockColor
+rockColorForLabel rockColors label =
+    List.Extra.find (\rc -> rc.label == label) rockColors
+
+
+rockColorValueForLabel : List RockColor -> String -> String
+rockColorValueForLabel rockColors label =
+    rockColorForLabel rockColors label
+        |> Maybe.map (\rc -> rc.value)
+        |> Maybe.withDefault ""
 
 
 sideWithHammerInEnd : List Side -> Int -> Maybe Int
@@ -452,6 +498,8 @@ type Msg
     | SelectGame Game
     | GotGame (WebData Game)
     | CloseGame
+    | SwapFirstHammer
+    | UpdateSideColor Side RockColor
     | UpdateSideScore Side String
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Int Int String
@@ -497,15 +545,16 @@ update msg model =
             in
             ( { model | savedGame = Loading }, sendPatch )
 
-        PatchedGame gameResponse ->
+        PatchedGame response ->
             let
-                savedGame =
-                    case gameResponse of
-                        Success decodedGame ->
-                            NotAsked
+                selectedGame =
+                    case response of
+                        Success game ->
+                            Success game
 
                         _ ->
-                            gameResponse
+                            -- Don't replace the currently selected game data on failure.
+                            model.selectedGame
 
                 updatedGame gameFromSave game =
                     if game.id == gameFromSave.id then
@@ -515,7 +564,7 @@ update msg model =
                         game
 
                 updatedGames games =
-                    case gameResponse of
+                    case response of
                         Success decodedGame ->
                             List.map (updatedGame decodedGame) games
 
@@ -523,8 +572,8 @@ update msg model =
                             games
             in
             ( { model
-                | selectedGame = gameResponse
-                , savedGame = savedGame
+                | selectedGame = selectedGame
+                , savedGame = response
                 , games = RemoteData.map updatedGames model.games
               }
             , Cmd.none
@@ -565,6 +614,32 @@ update msg model =
 
         CloseGame ->
             ( { model | selectedGame = NotAsked, savedGame = NotAsked }, Cmd.none )
+
+        SwapFirstHammer ->
+            let
+                updatedSide side =
+                    { side | firstHammer = not side.firstHammer }
+
+                updatedGame game =
+                    { game | sides = List.map updatedSide game.sides, changed = True }
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            , Cmd.none
+            )
+
+        UpdateSideColor sideIndex newColor ->
+            let
+                updatedSide side =
+                    if side.id == sideIndex.id then
+                        { side | rockColor = newColor.label }
+
+                    else
+                        side
+
+                updatedGame game =
+                    { game | sides = List.map updatedSide game.sides, changed = True }
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
         UpdateSideScore sideIndex newScore ->
             let
@@ -716,25 +791,7 @@ view model =
                 viewNotReady "Loading..."
 
             Failure error ->
-                let
-                    errorMessage =
-                        case error of
-                            Http.BadUrl string ->
-                                "Bad URL used to fetch games: " ++ string
-
-                            Http.Timeout ->
-                                "Network timeout when trying to fetch games."
-
-                            Http.NetworkError ->
-                                "Network error when trying to fetch games."
-
-                            Http.BadStatus int ->
-                                "Bad status response from server when trying to fetch games."
-
-                            Http.BadBody string ->
-                                "Bad body response from server when trying to fetch games: " ++ string
-                in
-                viewFetchError errorMessage
+                viewFetchError (errorMessage error)
 
             Success data ->
                 case model.selectedGame of
@@ -742,7 +799,10 @@ view model =
                         viewSelectedGame model data game
 
                     Loading ->
-                        viewNotReady "Loading game..."
+                        viewNotReady "Loading..."
+
+                    Failure error ->
+                        viewFetchError (errorMessage error)
 
                     _ ->
                         viewData model data
@@ -891,32 +951,17 @@ viewSelectedGame model data game =
         ]
 
 
-viewGameSaveError : Model -> Html Msg
-viewGameSaveError model =
+viewGameSaveMessage : Model -> Html Msg
+viewGameSaveMessage model =
     case model.savedGame of
+        Success _ ->
+            div [ class "alert alert-success" ] [ text "Game saved." ]
+
         Failure error ->
-            let
-                errorMessage =
-                    case error of
-                        Http.BadUrl string ->
-                            "Bad URL used to save game: " ++ string
-
-                        Http.Timeout ->
-                            "Network timeout when trying to save the game."
-
-                        Http.NetworkError ->
-                            "Network error when trying to save the game."
-
-                        Http.BadStatus int ->
-                            "Error when trying to save the game."
-
-                        Http.BadBody string ->
-                            "Error when trying to save the game."
-            in
-            div [ class "alert alert-danger" ] [ text errorMessage ]
+            div [ class "alert alert-danger" ] [ text (errorMessage error) ]
 
         _ ->
-            span [ style "display" "none" ] []
+            text ""
 
 
 viewSides : Model -> Data -> Game -> Html Msg
@@ -1078,7 +1123,7 @@ viewSides model data game =
                             )
                         ]
                     , hr [] []
-                    , viewGameSaveError model
+                    , viewGameSaveMessage model
                     ]
                     (List.map viewSide game.sides)
                 )
@@ -1158,35 +1203,33 @@ viewSidesWithEndScores model data game =
                             ]
                             []
                         ]
+
+                hammerDisplay =
+                    if side.firstHammer then
+                        text " *"
+
+                    else
+                        text ""
             in
             tr []
-                (td [ class ("p-2 " ++ side.rockColor ++ "-rock") ] [ text side.teamName ]
+                (td [ class "p-2" ]
+                    [ div [ class "d-flex" ]
+                        [ div
+                            [ class "side-color-swatch"
+                            , style "background-color" (rockColorValueForLabel data.settings.rockColors side.rockColor)
+                            ]
+                            []
+                        , div [] [ text side.teamName ]
+                        , hammerDisplay
+                        ]
+                    ]
                     :: List.map viewEndForSide (List.range 1 numberOfEnds)
                     ++ [ th [ class "text-center px-2", style "padding-top" "12px" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
                 )
 
-        viewSideState : Side -> Html Msg
-        viewSideState side =
+        viewSideOther : Int -> Side -> Html Msg
+        viewSideOther sideIdx side =
             let
-                viewResultButton : SideResult -> Html Msg
-                viewResultButton result =
-                    button
-                        [ type_ "button"
-                        , onClick (UpdateSideResult side result)
-                        , style "margin-top" "-1px"
-                        , style "margin-left" "-1px"
-                        , class
-                            (("btn btn-outline-" ++ sideResultColor result)
-                                ++ (if side.result == result then
-                                        " active"
-
-                                    else
-                                        ""
-                                   )
-                            )
-                        ]
-                        [ text (sideResultForDisplay result) ]
-
                 scoreForDisplay =
                     case side.score of
                         Just score ->
@@ -1194,18 +1237,90 @@ viewSidesWithEndScores model data game =
 
                         Nothing ->
                             ""
+
+                viewSideResult : Html Msg
+                viewSideResult =
+                    let
+                        viewResultButton : SideResult -> Html Msg
+                        viewResultButton result =
+                            button
+                                [ type_ "button"
+                                , onClick (UpdateSideResult side result)
+                                , style "margin-top" "-1px"
+                                , style "margin-left" "-1px"
+                                , class
+                                    (("btn btn-outline-" ++ sideResultColor result)
+                                        ++ (if side.result == result then
+                                                " active"
+
+                                            else
+                                                ""
+                                           )
+                                    )
+                                ]
+                                [ text (sideResultForDisplay result) ]
+                    in
+                    div [ class "mb-2" ]
+                        [ h6 [] [ text "Result" ]
+                        , div [ class "d-flex " ]
+                            [ div
+                                [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
+                                (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
+                            ]
+                        ]
+
+                viewSideColor : Html Msg
+                viewSideColor =
+                    let
+                        viewColorButton : RockColor -> Html Msg
+                        viewColorButton rockColor =
+                            div
+                                [ onClick (UpdateSideColor side rockColor)
+                                , classList
+                                    [ ( "color-btn", True )
+                                    , ( "active", side.rockColor == rockColor.label )
+                                    ]
+                                , style "background-color" rockColor.value
+                                ]
+                                [ text "" ]
+                    in
+                    div
+                        [ class "mb-2" ]
+                        [ h6 [] [ text "Rock Colour" ]
+                        , div [ class "d-flex align-items-center" ]
+                            (List.map viewColorButton data.settings.rockColors)
+                        ]
+
+                viewSideHammer : Html Msg
+                viewSideHammer =
+                    div
+                        []
+                        [ h6 [] [ text "First Hammer" ]
+                        , button
+                            [ classList
+                                [ ( "btn", True )
+                                , ( "btn-sm", True )
+                                , ( "btn-secondary", side.firstHammer )
+                                ]
+                            , onClick SwapFirstHammer
+                            ]
+                            [ text "🔨" ]
+                        ]
             in
-            div []
-                [ h6 [ class (side.rockColor ++ "-rock") ]
-                    [ span [ class "pr-3" ] [ text side.teamName ]
-                    , span [] [ text scoreForDisplay ]
-                    ]
-                , div
-                    [ class "d-flex" ]
+            div
+                []
+                [ div [ class "d-flex" ]
                     [ div
-                        [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                        (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
+                        [ class "side-color-swatch"
+                        , style "background-color" (rockColorValueForLabel data.settings.rockColors side.rockColor)
+                        ]
+                        []
+                    , h5 [ class "mr-2" ] [ text side.teamName ]
+                    , h5 [] [ text scoreForDisplay ]
                     ]
+                , viewSideResult
+                , viewSideColor
+                , viewSideHammer
                 ]
     in
     div
@@ -1228,8 +1343,7 @@ viewSidesWithEndScores model data game =
                                 "Unknown Draw"
                         )
                     ]
-                , hr [] []
-                , viewGameSaveError model
+                , viewGameSaveMessage model
                 , div [ class "table-responsive" ]
                     [ table [ class "table table-sm table-bordered" ]
                         (tr []
@@ -1241,12 +1355,12 @@ viewSidesWithEndScores model data game =
                         )
                     ]
                 , hr [] []
-                , div [ class "d-flex justify-content-between" ] (List.map viewSideState game.sides)
+                , div [ class "d-flex justify-content-between" ] (List.indexedMap viewSideOther game.sides)
                 ]
             , div
                 [ class "d-flex justify-content-between card-footer" ]
                 [ button
-                    [ class "btn btn-secondary"
+                    [ class "btn btn-secondary mr-2"
                     , disabled (model.savedGame == Loading)
                     , onClick CloseGame
                     ]

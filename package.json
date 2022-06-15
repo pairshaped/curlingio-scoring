@@ -1,8 +1,8 @@
 {
   "scripts": {
     "start": "nf start",
-    "client": "elm-live src/Scoring.elm --start-page=dev.html --open -- --output=dev.js",
-    "server": "json-server -w db.json"
+    "client": "elm-live src/Scoring.elm --start-page=dev.html --open -- --output=dev.js --debug",
+    "server": "json-server -w db.json -d 50"
   },
   "dependencies": {
     "elm": "^0.19.1-no-deps",

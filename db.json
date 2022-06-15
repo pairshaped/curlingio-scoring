@@ -10,7 +10,29 @@
     "event_name": "Monday Night Open",
     "end_scores_enabled": true,
     "number_of_ends": 10,
-    "shot_by_shot_enabled": false
+    "shot_by_shot_enabled": false,
+    "rock_colors": [
+      {
+        "label": "red",
+        "value": "#dd0000"
+      },
+      {
+        "label": "yellow",
+        "value": "#dddd00"
+      },
+      {
+        "label": "blue",
+        "value": "#0000dd"
+      },
+      {
+        "label": "green",
+        "value": "#00dd00"
+      },
+      {
+        "label": "black",
+        "value": "#000000"
+      }
+    ]
   },
   "draws": [
     {
@@ -32,7 +54,7 @@
           "rock_color": "red",
           "first_hammer": false,
           "score": 11,
-          "result": null,
+          "result": "won",
           "end_scores": [
             0,
             6,
@@ -52,7 +74,7 @@
           "rock_color": "yellow",
           "first_hammer": true,
           "score": 7,
-          "result": null,
+          "result": "conceded",
           "end_scores": [
             2,
             0,
@@ -79,15 +101,15 @@
           "team_name": "Team C",
           "rock_color": "red",
           "first_hammer": false,
-          "score": 2,
+          "score": 7,
           "result": null,
           "end_scores": [
             2,
             0,
-            null,
-            null,
-            null,
-            null,
+            1,
+            2,
+            2,
+            0,
             null,
             null,
             null,
@@ -99,15 +121,15 @@
           "team_name": "Team D",
           "rock_color": "yellow",
           "first_hammer": true,
-          "score": 1,
+          "score": 2,
           "result": null,
           "end_scores": [
             0,
             1,
-            null,
-            null,
-            null,
-            null,
+            0,
+            0,
+            0,
+            1,
             null,
             null,
             null,
