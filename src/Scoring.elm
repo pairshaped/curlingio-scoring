@@ -1216,24 +1216,11 @@ viewSidesWithEndScores model data game =
                             ]
                             []
                         ]
-
-                hammerDisplay =
-                    if side.firstHammer then
-                        text " *"
-
-                    else
-                        text ""
             in
             tr []
                 (td [ class "p-2" ]
                     [ div [ class "d-flex" ]
-                        [ div
-                            [ class "side-color-swatch"
-                            , style "background-color" (rockColorValueForLabel data.settings.rockColors side.rockColor)
-                            ]
-                            []
-                        , div [] [ text side.teamName ]
-                        , hammerDisplay
+                        [ div [ style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.rockColor) ] [ text side.teamName ]
                         ]
                     ]
                     :: List.map viewEndForSide (List.range 1 numberOfEnds)
@@ -1315,7 +1302,7 @@ viewSidesWithEndScores model data game =
             in
             div
                 []
-                [ div [ class "d-flex", style "border-bottom" ("solid 1px " ++ rockColorValueForLabel data.settings.rockColors side.rockColor) ]
+                [ div [ class "d-flex", style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.rockColor) ]
                     [ h5 [ class "mr-2" ] [ text side.teamName ]
                     , h5 [] [ text scoreForDisplay ]
                     ]
