@@ -53,7 +53,7 @@
           "team_name": "Team A",
           "rock_color": "red",
           "first_hammer": false,
-          "score": 11,
+          "score": 13,
           "result": "won",
           "end_scores": [
             0,
@@ -63,7 +63,7 @@
             0,
             1,
             0,
-            null,
+            2,
             null,
             null
           ]
@@ -83,7 +83,7 @@
             2,
             0,
             3,
-            null,
+            0,
             null,
             null
           ]
@@ -167,7 +167,7 @@
         {
           "id": 8,
           "team_name": "Team F",
-          "rock_color": "yellow",
+          "rock_color": "blue",
           "first_hammer": true,
           "score": 10,
           "result": "tied",
@@ -215,7 +215,7 @@
         {
           "id": 8,
           "team_name": "Team H",
-          "rock_color": "yellow",
+          "rock_color": "blue",
           "first_hammer": true,
           "score": 7,
           "result": "lost",

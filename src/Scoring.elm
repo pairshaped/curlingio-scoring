@@ -11,8 +11,11 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
 import Json.Encode.Extra exposing (maybe)
 import List.Extra
+import Process
 import RemoteData exposing (RemoteData(..), WebData)
 import RemoteData.Http
+import Task
+import Time
 
 
 
@@ -504,6 +507,7 @@ type Msg
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Int Int String
     | SaveGame
+    | ResetSavedGame Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -543,7 +547,16 @@ update msg model =
                         _ ->
                             Cmd.none
             in
-            ( { model | savedGame = Loading }, sendPatch )
+            ( { model | savedGame = Loading }
+            , Cmd.batch
+                [ sendPatch
+                , Task.perform ResetSavedGame (Process.sleep 5000 |> Task.andThen (\_ -> Time.now))
+                ]
+            )
+
+        ResetSavedGame t ->
+            -- This will clear the save message in our view.
+            ( { model | savedGame = NotAsked }, Cmd.none )
 
         PatchedGame response ->
             let
@@ -1260,8 +1273,8 @@ viewSidesWithEndScores model data game =
                                 ]
                                 [ text (sideResultForDisplay result) ]
                     in
-                    div [ class "mb-2" ]
-                        [ h6 [] [ text "Result" ]
+                    div [ class "mt-2" ]
+                        [ h5 [] [ text "Result" ]
                         , div [ class "d-flex " ]
                             [ div
                                 [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
@@ -1285,42 +1298,29 @@ viewSidesWithEndScores model data game =
                                 [ text "" ]
                     in
                     div
-                        [ class "mb-2" ]
-                        [ h6 [] [ text "Rock Colour" ]
-                        , div [ class "d-flex align-items-center" ]
-                            (List.map viewColorButton data.settings.rockColors)
-                        ]
-
-                viewSideHammer : Html Msg
-                viewSideHammer =
-                    div
-                        []
-                        [ h6 [] [ text "First Hammer" ]
-                        , button
+                        [ class "mt-2 mb-3 d-flex justify-content-between align-items-center" ]
+                        [ button
                             [ classList
                                 [ ( "btn", True )
                                 , ( "btn-sm", True )
-                                , ( "btn-secondary", side.firstHammer )
+                                , ( "btn-outline-secondary", not side.firstHammer )
+                                , ( "btn-success", side.firstHammer )
                                 ]
                             , onClick SwapFirstHammer
                             ]
-                            [ text "🔨" ]
+                            [ text "First Hammer" ]
+                        , div [ class "d-flex align-items-center" ]
+                            (List.map viewColorButton data.settings.rockColors)
                         ]
             in
             div
                 []
-                [ div [ class "d-flex" ]
-                    [ div
-                        [ class "side-color-swatch"
-                        , style "background-color" (rockColorValueForLabel data.settings.rockColors side.rockColor)
-                        ]
-                        []
-                    , h5 [ class "mr-2" ] [ text side.teamName ]
+                [ div [ class "d-flex", style "border-bottom" ("solid 1px " ++ rockColorValueForLabel data.settings.rockColors side.rockColor) ]
+                    [ h5 [ class "mr-2" ] [ text side.teamName ]
                     , h5 [] [ text scoreForDisplay ]
                     ]
-                , viewSideResult
                 , viewSideColor
-                , viewSideHammer
+                , viewSideResult
                 ]
     in
     div
@@ -1329,21 +1329,25 @@ viewSidesWithEndScores model data game =
             [ class "card" ]
             [ div
                 [ class "card-body" ]
-                [ h3
-                    [ class "card-title" ]
-                    [ text game.name ]
-                , h6
-                    [ class "card-subtitle mb-2 text-muted" ]
-                    [ text
-                        (case findDraw data.draws game.drawId of
-                            Just draw ->
-                                "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+                [ div [ class "d-flex justify-content-between" ]
+                    [ div []
+                        [ h3
+                            [ class "card-title" ]
+                            [ text game.name ]
+                        , h6
+                            [ class "card-subtitle mb-2 text-muted" ]
+                            [ text
+                                (case findDraw data.draws game.drawId of
+                                    Just draw ->
+                                        "Draw " ++ draw.label ++ " - " ++ draw.startsAt
 
-                            Nothing ->
-                                "Unknown Draw"
-                        )
+                                    Nothing ->
+                                        "Unknown Draw"
+                                )
+                            ]
+                        ]
+                    , viewGameSaveMessage model
                     ]
-                , viewGameSaveMessage model
                 , div [ class "table-responsive" ]
                     [ table [ class "table table-sm table-bordered" ]
                         (tr []
