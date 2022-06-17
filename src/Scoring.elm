@@ -1363,6 +1363,7 @@ viewSidesWithEndScores model data game =
                     [ button
                         [ class "btn btn-secondary mr-2"
                         , disabled (model.savedGame == Loading)
+                        , title "Abandons any changes you've made and takes you back to the draw schedule."
                         , onClick CloseGame
                         ]
                         [ text "Cancel" ]
@@ -1370,12 +1371,14 @@ viewSidesWithEndScores model data game =
                         [ class "btn btn-info mr-2"
                         , disabled (model.savedGame == Loading)
                         , onClick ReloadGame
+                        , title "Abandons any changes you've made and reloads the game from the server."
                         ]
                         [ text "Reload" ]
                     ]
                 , button
                     [ class "btn btn-primary"
                     , disabled (not game.changed || model.savedGame == Loading)
+                    , title "Saves all changes you've made since opening the game."
                     , onClick SaveGame
                     ]
                     [ text "Save" ]
