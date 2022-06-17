@@ -497,17 +497,18 @@ type Msg
     | GotGames (WebData (List Game))
     | ReloadData
     | ToggleFullScreen
-    | PatchedGame (WebData Game)
     | SelectGame Game
     | GotGame (WebData Game)
+    | SaveGame
+    | PatchedGame (WebData Game)
+    | ResetSavedGame Time.Posix
+    | ReloadGame
     | CloseGame
     | SwapFirstHammer
     | UpdateSideColor Side RockColor
     | UpdateSideScore Side String
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Int Int String
-    | SaveGame
-    | ResetSavedGame Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -537,6 +538,39 @@ update msg model =
                 ]
             )
 
+        ToggleFullScreen ->
+            ( { model | fullScreen = not model.fullScreen }, Cmd.none )
+
+        SelectGame game ->
+            ( { model | selectedGame = Loading }, getGame model.flags.baseUrl game.id )
+
+        GotGame response ->
+            let
+                -- Fill in any missing ends
+                fillEndScores es =
+                    let
+                        minEnds =
+                            case model.settings of
+                                Success settings ->
+                                    settings.numberOfEnds
+
+                                _ ->
+                                    10
+                    in
+                    if List.length es < 10 then
+                        es ++ List.map (\_ -> Nothing) (List.range 1 (minEnds - List.length es))
+
+                    else
+                        es
+
+                updatedSide side =
+                    { side | endScores = fillEndScores side.endScores }
+
+                updatedGame game =
+                    { game | sides = List.map updatedSide game.sides }
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame response, savedGame = NotAsked }, Cmd.none )
+
         SaveGame ->
             let
                 sendPatch =
@@ -553,10 +587,6 @@ update msg model =
                 , Task.perform ResetSavedGame (Process.sleep 5000 |> Task.andThen (\_ -> Time.now))
                 ]
             )
-
-        ResetSavedGame t ->
-            -- This will clear the save message in our view.
-            ( { model | savedGame = NotAsked }, Cmd.none )
 
         PatchedGame response ->
             let
@@ -592,38 +622,17 @@ update msg model =
             , Cmd.none
             )
 
-        ToggleFullScreen ->
-            ( { model | fullScreen = not model.fullScreen }, Cmd.none )
+        ResetSavedGame t ->
+            -- This will clear the save message in our view.
+            ( { model | savedGame = NotAsked }, Cmd.none )
 
-        SelectGame game ->
-            ( { model | selectedGame = Loading }, getGame model.flags.baseUrl game.id )
+        ReloadGame ->
+            case model.selectedGame of
+                Success game ->
+                    ( { model | selectedGame = Loading, savedGame = NotAsked }, getGame model.flags.baseUrl game.id )
 
-        GotGame response ->
-            let
-                -- Fill in any missing ends
-                fillEndScores es =
-                    let
-                        minEnds =
-                            case model.settings of
-                                Success settings ->
-                                    settings.numberOfEnds
-
-                                _ ->
-                                    10
-                    in
-                    if List.length es < 10 then
-                        es ++ List.map (\_ -> Nothing) (List.range 1 (minEnds - List.length es))
-
-                    else
-                        es
-
-                updatedSide side =
-                    { side | endScores = fillEndScores side.endScores }
-
-                updatedGame game =
-                    { game | sides = List.map updatedSide game.sides }
-            in
-            ( { model | selectedGame = RemoteData.map updatedGame response, savedGame = NotAsked }, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
         CloseGame ->
             ( { model | selectedGame = NotAsked, savedGame = NotAsked }, Cmd.none )
@@ -1350,12 +1359,20 @@ viewSidesWithEndScores model data game =
                 ]
             , div
                 [ class "d-flex justify-content-between card-footer" ]
-                [ button
-                    [ class "btn btn-secondary mr-2"
-                    , disabled (model.savedGame == Loading)
-                    , onClick CloseGame
+                [ div []
+                    [ button
+                        [ class "btn btn-secondary mr-2"
+                        , disabled (model.savedGame == Loading)
+                        , onClick CloseGame
+                        ]
+                        [ text "Cancel" ]
+                    , button
+                        [ class "btn btn-info mr-2"
+                        , disabled (model.savedGame == Loading)
+                        , onClick ReloadGame
+                        ]
+                        [ text "Reload" ]
                     ]
-                    [ text "Cancel" ]
                 , button
                     [ class "btn btn-primary"
                     , disabled (not game.changed || model.savedGame == Loading)
