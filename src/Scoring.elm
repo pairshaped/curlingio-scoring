@@ -546,7 +546,7 @@ update msg model =
             ( { model | savedGame = Loading }
             , Cmd.batch
                 [ sendPatch
-                , Task.perform ResetSavedGame (Process.sleep 25000 |> Task.andThen (\_ -> Time.now))
+                , Task.perform ResetSavedGame (Process.sleep 6000 |> Task.andThen (\_ -> Time.now))
                 ]
             )
 
