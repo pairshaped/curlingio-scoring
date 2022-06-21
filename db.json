@@ -1,238 +1,240 @@
 {
-  "settings": {
-    "sheets": [
-      "Sheet 1",
-      "Sheet 2",
-      "Sheet 3",
-      "Sheet 4"
+  "scoring": {
+    "settings": {
+      "sheets": [
+        "Sheet 1",
+        "Sheet 2",
+        "Sheet 3",
+        "Sheet 4"
+      ],
+      "current_draw_id": 1,
+      "event_name": "Monday Night Open",
+      "end_scores_enabled": true,
+      "number_of_ends": 10,
+      "shot_by_shot_enabled": false,
+      "rock_colors": [
+        {
+          "label": "red",
+          "value": "#dd0000"
+        },
+        {
+          "label": "yellow",
+          "value": "#dddd00"
+        },
+        {
+          "label": "blue",
+          "value": "#0000dd"
+        },
+        {
+          "label": "green",
+          "value": "#00dd00"
+        },
+        {
+          "label": "black",
+          "value": "#000000"
+        }
+      ]
+    },
+    "draws": [
+      {
+        "id": 1,
+        "label": "1",
+        "starts_at": "Sep 01 at 7:00 pm"
+      }
     ],
-    "current_draw_id": 1,
-    "event_name": "Monday Night Open",
-    "end_scores_enabled": true,
-    "number_of_ends": 10,
-    "shot_by_shot_enabled": false,
-    "rock_colors": [
+    "games": [
       {
-        "label": "red",
-        "value": "#dd0000"
+        "id": "1",
+        "draw_id": 1,
+        "sheet": 1,
+        "name": "A vs B",
+        "game_positions": [
+          {
+            "id": 1,
+            "team_name": "Team A",
+            "rock_color": "red",
+            "first_hammer": false,
+            "score": 13,
+            "result": "won",
+            "end_scores": [
+              0,
+              6,
+              2,
+              2,
+              0,
+              1,
+              0,
+              2,
+              null,
+              null
+            ]
+          },
+          {
+            "id": 2,
+            "team_name": "Team B",
+            "rock_color": "yellow",
+            "first_hammer": true,
+            "score": 7,
+            "result": "forfeited",
+            "end_scores": [
+              2,
+              0,
+              0,
+              0,
+              2,
+              0,
+              3,
+              0,
+              null,
+              null
+            ]
+          }
+        ]
       },
       {
-        "label": "yellow",
-        "value": "#dddd00"
+        "id": "2",
+        "draw_id": 1,
+        "sheet": 2,
+        "name": "C vs D",
+        "game_positions": [
+          {
+            "id": 3,
+            "team_name": "Team C",
+            "rock_color": "red",
+            "first_hammer": false,
+            "score": 7,
+            "result": null,
+            "end_scores": [
+              2,
+              0,
+              1,
+              2,
+              2,
+              0,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          {
+            "id": 4,
+            "team_name": "Team D",
+            "rock_color": "yellow",
+            "first_hammer": true,
+            "score": 2,
+            "result": null,
+            "end_scores": [
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ]
       },
       {
-        "label": "blue",
-        "value": "#0000dd"
+        "id": "3",
+        "draw_id": 1,
+        "sheet": 3,
+        "name": "E vs F",
+        "game_positions": [
+          {
+            "id": 5,
+            "team_name": "Team E",
+            "rock_color": "red",
+            "first_hammer": false,
+            "score": 10,
+            "result": "tied",
+            "end_scores": [
+              3,
+              0,
+              1,
+              0,
+              2,
+              0,
+              3,
+              0,
+              1,
+              0
+            ]
+          },
+          {
+            "id": 8,
+            "team_name": "Team F",
+            "rock_color": "blue",
+            "first_hammer": true,
+            "score": 10,
+            "result": "tied",
+            "end_scores": [
+              0,
+              2,
+              0,
+              2,
+              0,
+              1,
+              0,
+              4,
+              0,
+              1
+            ]
+          }
+        ]
       },
       {
-        "label": "green",
-        "value": "#00dd00"
-      },
-      {
-        "label": "black",
-        "value": "#000000"
+        "id": "4",
+        "draw_id": 1,
+        "sheet": 4,
+        "name": "G vs H",
+        "game_positions": [
+          {
+            "id": 7,
+            "team_name": "Team G",
+            "rock_color": "red",
+            "first_hammer": false,
+            "score": 10,
+            "result": "won",
+            "end_scores": [
+              1,
+              3,
+              0,
+              1,
+              0,
+              2,
+              1,
+              0,
+              2,
+              0
+            ]
+          },
+          {
+            "id": 8,
+            "team_name": "Team H",
+            "rock_color": "blue",
+            "first_hammer": true,
+            "score": 7,
+            "result": "lost",
+            "end_scores": [
+              0,
+              0,
+              2,
+              0,
+              3,
+              0,
+              0,
+              1,
+              0,
+              1
+            ]
+          }
+        ]
       }
     ]
-  },
-  "draws": [
-    {
-      "id": 1,
-      "label": "1",
-      "starts_at": "Sep 01 at 7:00 pm"
-    }
-  ],
-  "games": [
-    {
-      "id": "1",
-      "draw_id": 1,
-      "sheet": 1,
-      "name": "A vs B",
-      "game_positions": [
-        {
-          "id": 1,
-          "team_name": "Team A",
-          "rock_color": "red",
-          "first_hammer": false,
-          "score": 13,
-          "result": "won",
-          "end_scores": [
-            0,
-            6,
-            2,
-            2,
-            0,
-            1,
-            0,
-            2,
-            null,
-            null
-          ]
-        },
-        {
-          "id": 2,
-          "team_name": "Team B",
-          "rock_color": "yellow",
-          "first_hammer": true,
-          "score": 7,
-          "result": "forfeited",
-          "end_scores": [
-            2,
-            0,
-            0,
-            0,
-            2,
-            0,
-            3,
-            0,
-            null,
-            null
-          ]
-        }
-      ]
-    },
-    {
-      "id": "2",
-      "draw_id": 1,
-      "sheet": 2,
-      "name": "C vs D",
-      "game_positions": [
-        {
-          "id": 3,
-          "team_name": "Team C",
-          "rock_color": "red",
-          "first_hammer": false,
-          "score": 7,
-          "result": null,
-          "end_scores": [
-            2,
-            0,
-            1,
-            2,
-            2,
-            0,
-            null,
-            null,
-            null,
-            null
-          ]
-        },
-        {
-          "id": 4,
-          "team_name": "Team D",
-          "rock_color": "yellow",
-          "first_hammer": true,
-          "score": 2,
-          "result": null,
-          "end_scores": [
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            null,
-            null,
-            null,
-            null
-          ]
-        }
-      ]
-    },
-    {
-      "id": "3",
-      "draw_id": 1,
-      "sheet": 3,
-      "name": "E vs F",
-      "game_positions": [
-        {
-          "id": 5,
-          "team_name": "Team E",
-          "rock_color": "red",
-          "first_hammer": false,
-          "score": 10,
-          "result": "tied",
-          "end_scores": [
-            3,
-            0,
-            1,
-            0,
-            2,
-            0,
-            3,
-            0,
-            1,
-            0
-          ]
-        },
-        {
-          "id": 8,
-          "team_name": "Team F",
-          "rock_color": "blue",
-          "first_hammer": true,
-          "score": 10,
-          "result": "tied",
-          "end_scores": [
-            0,
-            2,
-            0,
-            2,
-            0,
-            1,
-            0,
-            4,
-            0,
-            1
-          ]
-        }
-      ]
-    },
-    {
-      "id": "4",
-      "draw_id": 1,
-      "sheet": 4,
-      "name": "G vs H",
-      "game_positions": [
-        {
-          "id": 7,
-          "team_name": "Team G",
-          "rock_color": "red",
-          "first_hammer": false,
-          "score": 10,
-          "result": "won",
-          "end_scores": [
-            1,
-            3,
-            0,
-            1,
-            0,
-            2,
-            1,
-            0,
-            2,
-            0
-          ]
-        },
-        {
-          "id": 8,
-          "team_name": "Team H",
-          "rock_color": "blue",
-          "first_hammer": true,
-          "score": 7,
-          "result": "lost",
-          "end_scores": [
-            0,
-            0,
-            2,
-            0,
-            3,
-            0,
-            0,
-            1,
-            0,
-            1
-          ]
-        }
-      ]
-    }
-  ]
+  }
 }

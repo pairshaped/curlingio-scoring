@@ -24,9 +24,7 @@ import Time
 
 type alias Model =
     { flags : Flags
-    , settings : WebData Settings
-    , draws : WebData (List Draw)
-    , games : WebData (List Game)
+    , data : WebData Data
     , savedGame : WebData Game
     , selectedGame : WebData Game
     , fullScreen : Bool
@@ -85,7 +83,7 @@ type alias Side =
 
 
 type alias RockColor =
-    { label : String
+    { key : String
     , value : String
     }
 
@@ -103,6 +101,14 @@ type SideResult
 -- DECODERS
 
 
+dataDecoder : Decoder Data
+dataDecoder =
+    Decode.succeed Data
+        |> required "settings" settingsDecoder
+        |> required "draws" (list drawDecoder)
+        |> required "games" (list gameDecoder)
+
+
 settingsDecoder : Decoder Settings
 settingsDecoder =
     Decode.succeed Settings
@@ -113,11 +119,6 @@ settingsDecoder =
         |> optional "number_of_ends" int 10
         |> required "shot_by_shot_enabled" bool
         |> required "rock_colors" (list rockColorDecoder)
-
-
-drawsDecoder : Decoder (List Draw)
-drawsDecoder =
-    list drawDecoder
 
 
 drawDecoder : Decoder Draw
@@ -131,13 +132,8 @@ drawDecoder =
 rockColorDecoder : Decoder RockColor
 rockColorDecoder =
     Decode.succeed RockColor
-        |> required "label" string
+        |> required "key" string
         |> required "value" string
-
-
-gamesDecoder : Decoder (List Game)
-gamesDecoder =
-    list gameDecoder
 
 
 gameDecoder : Decoder Game
@@ -252,12 +248,8 @@ encodeSideResult sideResult =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags NotAsked NotAsked NotAsked NotAsked NotAsked False
-    , Cmd.batch
-        [ getSettings flags.baseUrl
-        , getDraws flags.baseUrl
-        , getGames flags.baseUrl
-        ]
+    ( Model flags NotAsked NotAsked NotAsked False
+    , getData flags.baseUrl
     )
 
 
@@ -280,31 +272,13 @@ errorMessage error =
             "Bad body response from server. Please contact Curling I/O support if the issue persists for more than a few minutes. Details: \"" ++ string ++ "\""
 
 
-getSettings : String -> Cmd Msg
-getSettings baseUrl =
-    let
-        url =
-            baseUrl ++ "/settings"
-    in
-    RemoteData.Http.get url GotSettings settingsDecoder
-
-
-getDraws : String -> Cmd Msg
-getDraws baseUrl =
-    let
-        url =
-            baseUrl ++ "/draws"
-    in
-    RemoteData.Http.get url GotDraws drawsDecoder
-
-
-getGames : String -> Cmd Msg
-getGames baseUrl =
+getData : String -> Cmd Msg
+getData baseUrl =
     let
         url =
             baseUrl ++ "/games"
     in
-    RemoteData.Http.get url GotGames gamesDecoder
+    RemoteData.Http.get url GotData dataDecoder
 
 
 getGame : String -> String -> Cmd Msg
@@ -385,13 +359,13 @@ sideResultColor result =
 
 
 rockColorForLabel : List RockColor -> String -> Maybe RockColor
-rockColorForLabel rockColors label =
-    List.Extra.find (\rc -> rc.label == label) rockColors
+rockColorForLabel rockColors key =
+    List.Extra.find (\rc -> rc.key == key) rockColors
 
 
 rockColorValueForLabel : List RockColor -> String -> String
-rockColorValueForLabel rockColors label =
-    rockColorForLabel rockColors label
+rockColorValueForLabel rockColors key =
+    rockColorForLabel rockColors key
         |> Maybe.map (\rc -> rc.value)
         |> Maybe.withDefault ""
 
@@ -492,9 +466,7 @@ sideWithHammerInEnd sides endIndex =
 
 
 type Msg
-    = GotSettings (WebData Settings)
-    | GotDraws (WebData (List Draw))
-    | GotGames (WebData (List Game))
+    = GotData (WebData Data)
     | ReloadData
     | ToggleFullScreen
     | SelectGame Game
@@ -514,27 +486,17 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotSettings response ->
-            ( { model | settings = response }, Cmd.none )
-
-        GotDraws response ->
-            ( { model | draws = response }, Cmd.none )
-
-        GotGames response ->
-            ( { model | games = response }, Cmd.none )
+        GotData response ->
+            ( { model | data = response }, Cmd.none )
 
         ReloadData ->
             ( { model
-                | settings = Loading
-                , draws = Loading
-                , games = Loading
+                | data = Loading
                 , savedGame = NotAsked
                 , selectedGame = NotAsked
               }
             , Cmd.batch
-                [ getSettings model.flags.baseUrl
-                , getDraws model.flags.baseUrl
-                , getGames model.flags.baseUrl
+                [ getData model.flags.baseUrl
                 ]
             )
 
@@ -550,9 +512,9 @@ update msg model =
                 fillEndScores es =
                     let
                         minEnds =
-                            case model.settings of
-                                Success settings ->
-                                    settings.numberOfEnds
+                            case model.data of
+                                Success data ->
+                                    data.settings.numberOfEnds
 
                                 _ ->
                                     10
@@ -584,7 +546,7 @@ update msg model =
             ( { model | savedGame = Loading }
             , Cmd.batch
                 [ sendPatch
-                , Task.perform ResetSavedGame (Process.sleep 5000 |> Task.andThen (\_ -> Time.now))
+                , Task.perform ResetSavedGame (Process.sleep 25000 |> Task.andThen (\_ -> Time.now))
                 ]
             )
 
@@ -613,11 +575,14 @@ update msg model =
 
                         _ ->
                             games
+
+                updatedData data =
+                    { data | games = updatedGames data.games }
             in
             ( { model
                 | selectedGame = selectedGame
                 , savedGame = response
-                , games = RemoteData.map updatedGames model.games
+                , data = RemoteData.map updatedData model.data
               }
             , Cmd.none
             )
@@ -653,7 +618,7 @@ update msg model =
             let
                 updatedSide side =
                     if side.id == sideIndex.id then
-                        { side | rockColor = newColor.label }
+                        { side | rockColor = newColor.key }
 
                     else
                         side
@@ -781,12 +746,6 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    let
-        mergeResponses settings draws games =
-            RemoteData.map (\a b c -> Data a b c) settings
-                |> RemoteData.andMap draws
-                |> RemoteData.andMap games
-    in
     div
         (List.append
             [ id "scoring" ]
@@ -805,7 +764,7 @@ view model =
                 []
             )
         )
-        [ case mergeResponses model.settings model.draws model.games of
+        [ case model.data of
             NotAsked ->
                 viewNotReady "Initializing..."
 
@@ -1287,7 +1246,7 @@ viewSidesWithEndScores model data game =
                                 [ onClick (UpdateSideColor side rockColor)
                                 , classList
                                     [ ( "color-btn", True )
-                                    , ( "active", side.rockColor == rockColor.label )
+                                    , ( "active", side.rockColor == rockColor.key )
                                     ]
                                 , style "background-color" rockColor.value
                                 ]
