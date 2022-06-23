@@ -6,7 +6,7 @@ import Html.Attributes exposing (class, classList, disabled, href, id, style, ta
 import Html.Events exposing (onBlur, onClick, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
-import Json.Decode as Decode exposing (Decoder, bool, int, list, nullable, string)
+import Json.Decode as Decode exposing (Decoder, array, bool, int, list, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
 import Json.Encode.Extra exposing (maybe)
@@ -66,7 +66,7 @@ type alias Game =
     , drawId : Int
     , sheet : Int
     , name : String
-    , sides : List Side
+    , sides : ( Side, Side )
     , changed : Bool
     }
 
@@ -143,8 +143,15 @@ gameDecoder =
         |> required "draw_id" int
         |> required "sheet" int
         |> required "name" string
-        |> required "game_positions" (list sideDecoder)
+        |> required "game_positions" sidesDecoder
         |> hardcoded False
+
+
+sidesDecoder : Decoder ( Side, Side )
+sidesDecoder =
+    Decode.map2 Tuple.pair
+        (Decode.index 0 sideDecoder)
+        (Decode.index 1 sideDecoder)
 
 
 sideDecoder : Decoder Side
@@ -192,7 +199,7 @@ sideResultDecoder =
 encodeGame : Game -> Encode.Value
 encodeGame game =
     Encode.object
-        [ ( "game_positions", Encode.list encodeSide game.sides )
+        [ ( "game_positions", Encode.list encodeSide [ Tuple.first game.sides, Tuple.second game.sides ] )
         ]
 
 
@@ -370,95 +377,164 @@ rockColorValueForLabel rockColors key =
         |> Maybe.withDefault ""
 
 
-sideWithHammerInEnd : List Side -> Int -> Maybe Int
-sideWithHammerInEnd sides endIndex =
-    -- TODO: This function feels frikin ridiculous. Need to unwrap these nested maybes.
-    case ( List.Extra.getAt 0 sides, List.Extra.getAt 1 sides ) of
-        ( Just top, Just bot ) ->
-            -- Figures out which side has hammer for a specific end (index).
-            -- For example, you can pass in both sides and an endIndex of 4, and we'll figure out who won the 3rd end, and return which side index gets hammer in the 4th (0 or 1)
-            if endIndex == 0 then
-                -- First hammer (LSFE)
-                if top.firstHammer then
-                    Just 0
+sideWithHammerInEnd : ( Side, Side ) -> Int -> Maybe Int
+sideWithHammerInEnd ( top, bot ) endIndex =
+    -- Figures out which side has hammer for a specific end (index).
+    -- For example, you can pass in both sides and an endIndex of 4, and we'll figure out who won the 3rd end, and return which side index gets hammer in the 4th (0 or 1)
+    if endIndex == 0 then
+        -- First hammer (LSFE)
+        if top.firstHammer then
+            Just 0
 
-                else
-                    -- Either bottom has first hammer, or one isn't set and we default to bottom position
-                    Just 1
+        else
+            -- Either bottom has first hammer, or one isn't set and we default to bottom position
+            Just 1
 
-            else
-                case ( List.Extra.getAt (endIndex - 1) top.endScores, List.Extra.getAt (endIndex - 1) bot.endScores ) of
-                    ( Just topScore_, Just botScore_ ) ->
-                        case ( topScore_, botScore_ ) of
-                            ( Just topScore, Just botScore ) ->
-                                if topScore < botScore then
-                                    -- top lost previous end, so top has next hammer
-                                    Just 0
+    else
+        case ( List.Extra.getAt (endIndex - 1) top.endScores, List.Extra.getAt (endIndex - 1) bot.endScores ) of
+            ( Just topScore_, Just botScore_ ) ->
+                case ( topScore_, botScore_ ) of
+                    ( Just topScore, Just botScore ) ->
+                        if topScore < botScore then
+                            -- top lost previous end, so top has next hammer
+                            Just 0
 
-                                else if topScore > botScore then
-                                    -- top won previous end, so bot has next hammer
-                                    Just 1
+                        else if topScore > botScore then
+                            -- top won previous end, so bot has next hammer
+                            Just 1
 
-                                else
-                                    -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                                    sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                        else
+                            -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
+                            sideWithHammerInEnd ( top, bot ) (endIndex - 1)
 
-                            ( Nothing, Just _ ) ->
-                                -- top lost previous end, so bot has next hammer
-                                Just 0
+                    ( Nothing, Just _ ) ->
+                        -- top lost previous end, so bot has next hammer
+                        Just 0
 
-                            ( Just _, Nothing ) ->
-                                -- bot lost previous end, so bot has next hammer
-                                Just 1
-
-                            ( Nothing, Nothing ) ->
-                                -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                                -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
-                                Nothing
-
-                    ( Nothing, Just botScore_ ) ->
-                        -- No top score found in index
-                        case botScore_ of
-                            Just botScore ->
-                                if botScore > 0 then
-                                    -- top lost previous end, give top next hammer
-                                    Just 0
-
-                                else
-                                    -- tied, recurse
-                                    sideWithHammerInEnd [ top, bot ] (endIndex - 1)
-
-                            Nothing ->
-                                -- tied, recurse
-                                -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
-                                Nothing
-
-                    ( Just topScore_, Nothing ) ->
-                        -- No bot score found in index
-                        case topScore_ of
-                            Just topScore ->
-                                if topScore > 0 then
-                                    -- top won previous end, give bot next hammer
-                                    Just 1
-
-                                else
-                                    -- tied, recurse
-                                    sideWithHammerInEnd [ top, bot ] (endIndex - 1)
-
-                            Nothing ->
-                                -- tied, recurse
-                                -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
-                                Nothing
+                    ( Just _, Nothing ) ->
+                        -- bot lost previous end, so bot has next hammer
+                        Just 1
 
                     ( Nothing, Nothing ) ->
                         -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                        -- sideWithHammerInEnd [ top, bot ] (endIndex - 1)
+                        -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
                         Nothing
 
-        _ ->
-            -- We don't have enough sides, but default to bottom side hammer anyways.
-            -- Just 1
-            Nothing
+            ( Nothing, Just botScore_ ) ->
+                -- No top score found in index
+                case botScore_ of
+                    Just botScore ->
+                        if botScore > 0 then
+                            -- top lost previous end, give top next hammer
+                            Just 0
+
+                        else
+                            -- tied, recurse
+                            sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+
+                    Nothing ->
+                        -- tied, recurse
+                        -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                        Nothing
+
+            ( Just topScore_, Nothing ) ->
+                -- No bot score found in index
+                case topScore_ of
+                    Just topScore ->
+                        if topScore > 0 then
+                            -- top won previous end, give bot next hammer
+                            Just 1
+
+                        else
+                            -- tied, recurse
+                            sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+
+                    Nothing ->
+                        -- tied, recurse
+                        -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                        Nothing
+
+            ( Nothing, Nothing ) ->
+                -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
+                -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                Nothing
+
+
+correctEnds : Int -> ( Side, Side ) -> ( Side, Side )
+correctEnds minNumberOfEnds ( top, bot ) =
+    let
+        countEndsScored endScores =
+            endScores
+                |> List.filterMap identity
+                |> List.length
+
+        totalScore endScores =
+            endScores
+                |> List.filterMap identity
+                |> List.sum
+
+        noTieDeclared =
+            top.result /= Tied && bot.result /= Tied
+
+        minEndsAreScored =
+            (countEndsScored top.endScores >= minNumberOfEnds)
+                && (countEndsScored bot.endScores >= minNumberOfEnds)
+
+        scoresAreTied =
+            totalScore top.endScores == totalScore bot.endScores
+
+        removeNothingEnds ( t, b ) =
+            -- Remove all nothings, then add them back up to the minNumberOfEnds
+            let
+                filtered side =
+                    { side
+                        | endScores =
+                            List.filterMap identity side.endScores
+                                |> List.map Just
+                    }
+            in
+            ( filtered t, filtered b )
+
+        addMissingNothingEnds ( t, b ) =
+            let
+                addMissing side =
+                    if List.length side.endScores < 10 then
+                        { side | endScores = side.endScores ++ List.map (\_ -> Nothing) (List.range 1 (minNumberOfEnds - List.length side.endScores)) }
+
+                    else
+                        let
+                            endsWithAtleastOneScore =
+                                max
+                                    (countEndsScored top.endScores)
+                                    (countEndsScored bot.endScores)
+                        in
+                        { side | endScores = side.endScores ++ List.map (\_ -> Nothing) (List.range 1 (endsWithAtleastOneScore - List.length side.endScores)) }
+            in
+            ( addMissing t, addMissing b )
+
+        addNothingEnd ( t, b ) =
+            let
+                addNothing side =
+                    { side | endScores = side.endScores ++ [ Nothing ] }
+            in
+            ( addNothing t, addNothing b )
+    in
+    if minEndsAreScored then
+        if noTieDeclared && scoresAreTied then
+            -- Natural tie
+            -- Leave one column of double Nothing values, but remove everything after it.
+            removeNothingEnds ( top, bot )
+                |> addMissingNothingEnds
+                |> addNothingEnd
+
+        else
+            -- The game is over. Remove any remaining nothing columns.
+            removeNothingEnds ( top, bot )
+                |> addMissingNothingEnds
+
+    else
+        removeNothingEnds ( top, bot )
+            |> addMissingNothingEnds
 
 
 
@@ -508,28 +584,13 @@ update msg model =
 
         GotGame response ->
             let
-                -- Fill in any missing ends
-                fillEndScores es =
-                    let
-                        minEnds =
-                            case model.data of
-                                Success data ->
-                                    data.settings.numberOfEnds
-
-                                _ ->
-                                    10
-                    in
-                    if List.length es < 10 then
-                        es ++ List.map (\_ -> Nothing) (List.range 1 (minEnds - List.length es))
-
-                    else
-                        es
-
-                updatedSide side =
-                    { side | endScores = fillEndScores side.endScores }
-
                 updatedGame game =
-                    { game | sides = List.map updatedSide game.sides }
+                    case model.data of
+                        Success data ->
+                            { game | sides = correctEnds data.settings.numberOfEnds game.sides }
+
+                        _ ->
+                            game
             in
             ( { model | selectedGame = RemoteData.map updatedGame response, savedGame = NotAsked }, Cmd.none )
 
@@ -555,7 +616,14 @@ update msg model =
                 selectedGame =
                     case response of
                         Success game ->
-                            Success game
+                            Success
+                                (case model.data of
+                                    Success data ->
+                                        { game | sides = correctEnds data.settings.numberOfEnds game.sides }
+
+                                    _ ->
+                                        game
+                                )
 
                         _ ->
                             -- Don't replace the currently selected game data on failure.
@@ -608,7 +676,7 @@ update msg model =
                     { side | firstHammer = not side.firstHammer }
 
                 updatedGame game =
-                    { game | sides = List.map updatedSide game.sides, changed = True }
+                    { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides, changed = True }
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
             , Cmd.none
@@ -624,7 +692,7 @@ update msg model =
                         side
 
                 updatedGame game =
-                    { game | sides = List.map updatedSide game.sides, changed = True }
+                    { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides, changed = True }
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
@@ -651,7 +719,7 @@ update msg model =
                         side
 
                 updatedGame game =
-                    { game | sides = List.map updatedSide game.sides, changed = True }
+                    { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides, changed = True }
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
@@ -682,7 +750,17 @@ update msg model =
                                 { side | result = NoResult }
 
                 updatedGame game =
-                    { game | sides = List.map updatedSide game.sides, changed = True }
+                    case model.data of
+                        Success data ->
+                            { game
+                                | sides =
+                                    Tuple.mapBoth updatedSide updatedSide game.sides
+                                        |> correctEnds data.settings.numberOfEnds
+                                , changed = True
+                            }
+
+                        _ ->
+                            game
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
@@ -720,12 +798,12 @@ update msg model =
 
                 updatedSide idx side =
                     if idx == sideIndex then
-                        { side | endScores = List.Extra.updateAt endIndex (\_ -> newScore) side.endScores }
+                        { side | endScores = List.Extra.setAt endIndex newScore side.endScores }
                             |> updatedScore
 
                     else if Maybe.withDefault 0 newScore > 0 then
                         -- If we have a score greater than 0, then make sure the other team scores 0
-                        { side | endScores = List.Extra.updateAt endIndex (\_ -> Just 0) side.endScores }
+                        { side | endScores = List.Extra.setAt endIndex (Just 0) side.endScores }
                             |> updatedScore
 
                     else
@@ -733,7 +811,17 @@ update msg model =
                             |> updatedScore
 
                 updatedGame game =
-                    { game | sides = List.indexedMap updatedSide game.sides, changed = True }
+                    case model.data of
+                        Success data ->
+                            { game
+                                | sides =
+                                    ( updatedSide 0 (Tuple.first game.sides), updatedSide 1 (Tuple.second game.sides) )
+                                        |> correctEnds data.settings.numberOfEnds
+                                , changed = True
+                            }
+
+                        _ ->
+                            game
 
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
@@ -892,17 +980,25 @@ viewDrawSheet games drawId sheet =
 viewGame : Game -> Html Msg
 viewGame game =
     let
-        completed =
-            List.any (\gp -> gp.result /= NoResult) game.sides
+        completed ( t, b ) =
+            let
+                sideCompleted side =
+                    side.result /= NoResult
+            in
+            sideCompleted t || sideCompleted b
 
-        inProgress =
-            List.any (\gp -> gp.score /= Nothing && gp.result == NoResult) game.sides
+        inProgress ( t, b ) =
+            let
+                sideInProgress side =
+                    side.score /= Nothing && side.result == NoResult
+            in
+            sideInProgress t || sideInProgress b
 
         resultClass =
-            if completed then
+            if completed game.sides then
                 "text-secondary"
 
-            else if inProgress then
+            else if inProgress game.sides then
                 "font-weight-bold"
 
             else
@@ -1106,7 +1202,9 @@ viewSides model data game =
                     , hr [] []
                     , viewGameSaveMessage model
                     ]
-                    (List.map viewSide game.sides)
+                    [ viewSide (Tuple.first game.sides)
+                    , viewSide (Tuple.second game.sides)
+                    ]
                 )
             , div
                 [ class "d-flex justify-content-between card-footer" ]
@@ -1130,15 +1228,14 @@ viewSides model data game =
 viewSidesWithEndScores : Model -> Data -> Game -> Html Msg
 viewSidesWithEndScores model data game =
     let
-        numberOfEnds : Int
         numberOfEnds =
-            case List.head game.sides of
-                Just side ->
-                    List.length side.endScores
-                        |> max data.settings.numberOfEnds
-
-                Nothing ->
-                    10
+            let
+                ( top, bot ) =
+                    game.sides
+            in
+            List.length top.endScores
+                |> max (List.length bot.endScores)
+                |> max data.settings.numberOfEnds
 
         viewEndHeader : Int -> Html Msg
         viewEndHeader endNumber =
@@ -1310,11 +1407,16 @@ viewSidesWithEndScores model data game =
                                 :: List.map viewEndHeader (List.range 1 numberOfEnds)
                                 ++ [ th [ style "width" "50px" ] [ text "Total" ] ]
                             )
-                            :: List.indexedMap viewSideEnds game.sides
+                            :: [ viewSideEnds 0 (Tuple.first game.sides)
+                               , viewSideEnds 1 (Tuple.second game.sides)
+                               ]
                         )
                     ]
                 , hr [] []
-                , div [ class "d-flex justify-content-between" ] (List.indexedMap viewSideOther game.sides)
+                , div [ class "d-flex justify-content-between" ]
+                    [ viewSideOther 0 (Tuple.first game.sides)
+                    , viewSideOther 1 (Tuple.second game.sides)
+                    ]
                 ]
             , div
                 [ class "d-flex justify-content-between card-footer" ]
