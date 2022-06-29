@@ -4,19 +4,20 @@
 
 ## Features
 
-* Lists games in their draw schedule. Possibly use a list view instead of the table / grid for phone compatibility.
+* Lists games in their draw schedule.
 * Games can be clicked / touched which will replace the view with the game to be updated.
 * First class support for phones and tablets so that curlers can enter their own scores provided they're logged in with an account that has permissions.
 * Performant, fast UI switching and only updates the game on save (nothing else).
 * Game names can be changed if the user has appropriate permissions (access to stages).
-* Validations. Make sure game names are unique across the entire event. Make sure scores aren't astronomical or negative.
+* Validations. Make sure scores aren't astronomical or negative.
+* End scores (line scores).
+* Setting first hammer (last shot first end).
+* Setting rock colors.
+* Ends are added automatically if tied after regulation (10 ends). Manually setting the result to tied will remove extra end(s).
 
 ## Roadmap
 
-* Mobile friendly draw schedule. Vertical instead of horizontal, changing based on screen width.
-* Line scores (enabled via settings)
-* Shot by shot (enabled via settings)
-* Websockets for better refresh / multi-client performance.
+* Shot by shot (enabled via league / competition settings)
 
 ## Installing Dependencies
 
@@ -29,6 +30,17 @@ yarn
 ```
 yarn start
 ```
+
+## Production Deployment
+
+Compile for production by optimizing and minimizing using:
+
+```
+./prod.sh
+```
+
+Deploy is simply pushing the updated prod.js and prod.min.js in master up to github.
+
 
 ## Source
 <https://github.com/pairshaped/curlingio-scoring>
