@@ -78,20 +78,16 @@ type alias Side =
     , firstHammer : Bool
     , score : Maybe Int
     , result : SideResult
-    , endScores : List (Maybe EndScore)
-    }
-
-
-type alias EndScore =
-    { points : Int
-    , shots : List Shot
+    , endScores : List (Maybe Int)
+    , shots : List (Maybe Shot)
     }
 
 
 type alias Shot =
-    { curlerId : Maybe Int
-    , turnType : Maybe String --TurnType
-    , throwType : Maybe String --ThrowType
+    { end_number : Int
+    , curlerId : Maybe Int
+    , turn : Maybe String --TurnType
+    , throw : Maybe String --ThrowType
     , rating : Maybe Int
     }
 
@@ -188,22 +184,17 @@ sideDecoder =
         |> required "first_hammer" bool
         |> optional "score" (nullable int) Nothing
         |> optional "result" sideResultDecoder NoResult
-        |> optional "end_scores" (list (nullable endScoreDecoder)) []
-
-
-endScoreDecoder : Decoder EndScore
-endScoreDecoder =
-    Decode.succeed EndScore
-        |> required "points" int
-        |> optional "shots" (list shotDecoder) []
+        |> optional "end_scores" (list (nullable int)) []
+        |> optional "shots" (list (nullable shotDecoder)) []
 
 
 shotDecoder : Decoder Shot
 shotDecoder =
     Decode.succeed Shot
+        |> required "end_number" int
         |> optional "curler_id" (nullable int) Nothing
-        |> optional "turn_type" (nullable string) Nothing
-        |> optional "throw_type" (nullable string) Nothing
+        |> optional "turn" (nullable string) Nothing
+        |> optional "throw" (nullable string) Nothing
         |> optional "rating" (nullable int) Nothing
 
 
@@ -258,21 +249,25 @@ encodeSide side =
                 (\score ->
                     case score of
                         Just s ->
-                            encodeEndScore s
+                            Encode.int s
 
                         Nothing ->
                             Encode.null
                 )
                 side.endScores
           )
-        ]
+        , ( "shots"
+          , Encode.list
+                (\shot ->
+                    case shot of
+                        Just s ->
+                            encodeShot s
 
-
-encodeEndScore : EndScore -> Encode.Value
-encodeEndScore endScore =
-    Encode.object
-        [ ( "points", Encode.int endScore.points )
-        , ( "shots", Encode.list encodeShot endScore.shots )
+                        Nothing ->
+                            Encode.null
+                )
+                side.shots
+          )
         ]
 
 
@@ -287,18 +282,18 @@ encodeShot shot =
                 Nothing ->
                     Encode.null
           )
-        , ( "turn_type"
-          , case shot.turnType of
-                Just turnType ->
-                    Encode.string turnType
+        , ( "turn"
+          , case shot.turn of
+                Just turn ->
+                    Encode.string turn
 
                 Nothing ->
                     Encode.null
           )
-        , ( "throw_type"
-          , case shot.throwType of
-                Just throwType ->
-                    Encode.string throwType
+        , ( "throw"
+          , case shot.throw of
+                Just throw ->
+                    Encode.string throw
 
                 Nothing ->
                     Encode.null
@@ -482,11 +477,11 @@ sideWithHammerInEnd ( top, bot ) endIndex =
             ( Just topScore_, Just botScore_ ) ->
                 case ( topScore_, botScore_ ) of
                     ( Just topScore, Just botScore ) ->
-                        if topScore.points < botScore.points then
+                        if topScore < botScore then
                             -- top lost previous end, so top has next hammer
                             Just 0
 
-                        else if topScore.points > botScore.points then
+                        else if topScore > botScore then
                             -- top won previous end, so bot has next hammer
                             Just 1
 
@@ -511,7 +506,7 @@ sideWithHammerInEnd ( top, bot ) endIndex =
                 -- No top score found in index
                 case botScore_ of
                     Just botScore ->
-                        if botScore.points > 0 then
+                        if botScore > 0 then
                             -- top lost previous end, give top next hammer
                             Just 0
 
@@ -528,7 +523,7 @@ sideWithHammerInEnd ( top, bot ) endIndex =
                 -- No bot score found in index
                 case topScore_ of
                     Just topScore ->
-                        if topScore.points > 0 then
+                        if topScore > 0 then
                             -- top won previous end, give bot next hammer
                             Just 1
 
@@ -558,7 +553,6 @@ correctEnds minNumberOfEnds ( top, bot ) =
         totalScore endScores =
             endScores
                 |> List.filterMap identity
-                |> List.map .points
                 |> List.sum
 
         noTieDeclared =
@@ -784,13 +778,13 @@ update msg model =
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
-        UpdateSideScore sideIndex newPoints ->
+        UpdateSideScore sideIndex newScore ->
             let
                 updatedSide side =
                     if side.id == sideIndex.id then
                         let
                             updatedScore =
-                                case String.toInt newPoints of
+                                case String.toInt newScore of
                                     Just int ->
                                         if int > 99 || int < 0 then
                                             Nothing
@@ -861,47 +855,37 @@ update msg model =
                     else
                         newScoreStr
 
-                newPoints =
+                newScore =
                     case String.toInt newScoreStrFixed of
                         Just s ->
                             if s < 0 then
-                                0
+                                Just 0
 
                             else if s > 8 then
-                                8
+                                Just 8
 
                             else
-                                s
+                                Just s
 
                         Nothing ->
-                            0
+                            Just 0
 
                 updatedScore side =
                     { side
                         | score =
                             List.filterMap identity side.endScores
-                                |> List.map .points
                                 |> List.sum
                                 |> Just
                     }
 
                 updatedSide idx side =
-                    let
-                        updatedEndScore points endScore =
-                            case endScore of
-                                Just es ->
-                                    Just { es | points = points }
-
-                                Nothing ->
-                                    Nothing
-                    in
                     if idx == sideIndex then
-                        { side | endScores = List.Extra.updateAt endIndex (updatedEndScore newPoints) side.endScores }
+                        { side | endScores = List.Extra.setAt endIndex newScore side.endScores }
                             |> updatedScore
 
-                    else if newPoints > 0 then
+                    else if Maybe.withDefault 0 newScore > 0 then
                         -- If we have a score greater than 0, then make sure the other team scores 0
-                        { side | endScores = List.Extra.updateAt endIndex (updatedEndScore 0) side.endScores }
+                        { side | endScores = List.Extra.setAt endIndex (Just 0) side.endScores }
                             |> updatedScore
 
                     else
@@ -1364,10 +1348,10 @@ viewSidesWithEndScores model data game =
                             , tabindex onTabIndex
                             , value
                                 (case List.Extra.getAt (endNumber - 1) side.endScores of
-                                    Just endScore ->
-                                        case endScore of
-                                            Just es ->
-                                                String.fromInt es.points
+                                    Just val ->
+                                        case val of
+                                            Just v ->
+                                                String.fromInt v
 
                                             Nothing ->
                                                 ""
