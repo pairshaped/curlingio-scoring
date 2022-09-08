@@ -3,7 +3,7 @@ module Scoring exposing (..)
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, classList, disabled, href, id, style, tabindex, title, type_, value)
-import Html.Events exposing (onBlur, onClick, onInput)
+import Html.Events exposing (onBlur, onClick, onFocus, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
 import Json.Decode as Decode exposing (Decoder, array, bool, int, list, nullable, string)
@@ -68,6 +68,7 @@ type alias Game =
     , name : String
     , sides : ( Side, Side )
     , changed : Bool
+    , focusedEndNumber : Int
     }
 
 
@@ -79,12 +80,13 @@ type alias Side =
     , score : Maybe Int
     , result : SideResult
     , endScores : List (Maybe Int)
-    , shots : List (Maybe Shot)
+    , shots : Maybe (List Shot)
     }
 
 
 type alias Shot =
-    { end_number : Int
+    { endNumber : Int
+    , shotNumber : Int
     , curlerId : Maybe Int
     , turn : Maybe String --TurnType
     , throw : Maybe String --ThrowType
@@ -166,6 +168,7 @@ gameDecoder =
         |> required "name" string
         |> required "game_positions" sidesDecoder
         |> hardcoded False
+        |> hardcoded 1
 
 
 sidesDecoder : Decoder ( Side, Side )
@@ -185,13 +188,14 @@ sideDecoder =
         |> optional "score" (nullable int) Nothing
         |> optional "result" sideResultDecoder NoResult
         |> optional "end_scores" (list (nullable int)) []
-        |> optional "shots" (list (nullable shotDecoder)) []
+        |> optional "shots" (nullable (list shotDecoder)) Nothing
 
 
 shotDecoder : Decoder Shot
 shotDecoder =
     Decode.succeed Shot
         |> required "end_number" int
+        |> required "shot_number" int
         |> optional "curler_id" (nullable int) Nothing
         |> optional "turn" (nullable string) Nothing
         |> optional "throw" (nullable string) Nothing
@@ -257,16 +261,12 @@ encodeSide side =
                 side.endScores
           )
         , ( "shots"
-          , Encode.list
-                (\shot ->
-                    case shot of
-                        Just s ->
-                            encodeShot s
+          , case side.shots of
+                Just shots ->
+                    Encode.list encodeShot shots
 
-                        Nothing ->
-                            Encode.null
-                )
-                side.shots
+                Nothing ->
+                    Encode.null
           )
         ]
 
@@ -639,6 +639,7 @@ type Msg
     | UpdateSideScore Side String
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Int Int String
+    | UpdateFocusedEndNumber Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -906,6 +907,20 @@ update msg model =
                             game
 
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateFocusedEndNumber endNumber ->
+            let
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            { game
+                                | focusedEndNumber = endNumber
+                            }
+
+                        _ ->
+                            game
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
@@ -1321,7 +1336,14 @@ viewSidesWithEndScores model data game =
 
         viewEndHeader : Int -> Html Msg
         viewEndHeader endNumber =
-            th [ class "text-center" ] [ text (String.fromInt endNumber) ]
+            td
+                [ classList
+                    [ ( "text-center", True )
+                    , ( "font-weight-bold", endNumber == game.focusedEndNumber )
+                    , ( "text-primary", endNumber == game.focusedEndNumber )
+                    ]
+                ]
+                [ text (String.fromInt endNumber) ]
 
         viewSideEnds : Int -> Side -> Html Msg
         viewSideEnds sideIndex side =
@@ -1360,6 +1382,7 @@ viewSidesWithEndScores model data game =
                                         ""
                                 )
                             , onInput (UpdateSideEndScore sideIndex (endNumber - 1))
+                            , onFocus (UpdateFocusedEndNumber endNumber)
                             ]
                             []
                         ]
@@ -1384,37 +1407,6 @@ viewSidesWithEndScores model data game =
 
                         Nothing ->
                             ""
-
-                viewSideResult : Html Msg
-                viewSideResult =
-                    let
-                        viewResultButton : SideResult -> Html Msg
-                        viewResultButton result =
-                            button
-                                [ type_ "button"
-                                , onClick (UpdateSideResult side result)
-                                , style "margin-top" "-1px"
-                                , style "margin-left" "-1px"
-                                , class
-                                    (("btn btn-outline-" ++ sideResultColor result)
-                                        ++ (if side.result == result then
-                                                " active"
-
-                                            else
-                                                ""
-                                           )
-                                    )
-                                ]
-                                [ text (sideResultForDisplay result) ]
-                    in
-                    div [ class "mt-2" ]
-                        [ h5 [] [ text "Result" ]
-                        , div [ class "d-flex " ]
-                            [ div
-                                [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                                (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
-                            ]
-                        ]
 
                 viewSideColor : Html Msg
                 viewSideColor =
@@ -1446,6 +1438,37 @@ viewSidesWithEndScores model data game =
                         , div [ class "d-flex align-items-center" ]
                             (List.map viewColorButton data.settings.rockColors)
                         ]
+
+                viewSideResult : Html Msg
+                viewSideResult =
+                    let
+                        viewResultButton : SideResult -> Html Msg
+                        viewResultButton result =
+                            button
+                                [ type_ "button"
+                                , onClick (UpdateSideResult side result)
+                                , style "margin-top" "-1px"
+                                , style "margin-left" "-1px"
+                                , class
+                                    (("btn btn-outline-" ++ sideResultColor result)
+                                        ++ (if side.result == result then
+                                                " active"
+
+                                            else
+                                                ""
+                                           )
+                                    )
+                                ]
+                                [ text (sideResultForDisplay result) ]
+                    in
+                    div [ class "mt-2" ]
+                        [ h5 [] [ text "Result" ]
+                        , div [ class "d-flex " ]
+                            [ div
+                                [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
+                                (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
+                            ]
+                        ]
             in
             div
                 []
@@ -1455,6 +1478,11 @@ viewSidesWithEndScores model data game =
                     ]
                 , viewSideColor
                 , viewSideResult
+                , if data.settings.shotByShotEnabled then
+                    viewShots side game.focusedEndNumber
+
+                  else
+                    text ""
                 ]
     in
     div
@@ -1528,6 +1556,40 @@ viewSidesWithEndScores model data game =
                 ]
             ]
         ]
+
+
+viewShots : Side -> Int -> Html Msg
+viewShots side focusedEndNumber =
+    let
+        shots : List Shot
+        shots =
+            let
+                missingShot shotNumber =
+                    Shot focusedEndNumber shotNumber Nothing Nothing Nothing Nothing
+            in
+            List.range 1 8
+                |> List.map
+                    (\onShotNumber ->
+                        case side.shots of
+                            Just shots_ ->
+                                case
+                                    List.Extra.find (\s -> s.endNumber == focusedEndNumber && s.shotNumber == onShotNumber) shots_
+                                of
+                                    Just shot_ ->
+                                        shot_
+
+                                    Nothing ->
+                                        missingShot onShotNumber
+
+                            Nothing ->
+                                missingShot onShotNumber
+                    )
+
+        viewShot : Shot -> Html Msg
+        viewShot shot =
+            div [] [ text ("Shot" ++ String.fromInt shot.shotNumber) ]
+    in
+    div [] (List.map viewShot shots)
 
 
 
