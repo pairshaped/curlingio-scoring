@@ -1,7 +1,7 @@
 module Scoring exposing (..)
 
 import Browser
-import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, span, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, select, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, classList, disabled, href, id, style, tabindex, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onFocus, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
@@ -88,9 +88,9 @@ type alias Shot =
     { endNumber : Int
     , shotNumber : Int
     , curlerId : Maybe Int
-    , turn : Maybe String --TurnType
-    , throw : Maybe String --ThrowType
-    , rating : Maybe Int
+    , turn : Maybe String
+    , throw : Maybe String
+    , rating : Maybe String
     }
 
 
@@ -199,7 +199,7 @@ shotDecoder =
         |> optional "curler_id" (nullable int) Nothing
         |> optional "turn" (nullable string) Nothing
         |> optional "throw" (nullable string) Nothing
-        |> optional "rating" (nullable int) Nothing
+        |> optional "rating" (nullable string) Nothing
 
 
 sideResultDecoder : Decoder SideResult
@@ -301,7 +301,7 @@ encodeShot shot =
         , ( "rating"
           , case shot.rating of
                 Just rating ->
-                    Encode.int rating
+                    Encode.string rating
 
                 Nothing ->
                     Encode.null
@@ -640,6 +640,9 @@ type Msg
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Int Int String
     | UpdateFocusedEndNumber Int
+    | UpdateShotTurn Side Shot String
+    | UpdateShotThrow Side Shot String
+    | UpdateShotRating Side Shot String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -915,9 +918,200 @@ update msg model =
                 updatedGame game =
                     case model.data of
                         Success data ->
-                            { game
-                                | focusedEndNumber = endNumber
-                            }
+                            { game | focusedEndNumber = endNumber }
+
+                        _ ->
+                            game
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateShotTurn forSide forShot val ->
+            let
+                updatedShot shot =
+                    if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
+                        let
+                            formattedVal =
+                                String.toUpper val
+
+                            valids =
+                                [ "I", "O", "X" ]
+
+                            validated =
+                                if List.member formattedVal valids then
+                                    Just formattedVal
+
+                                else
+                                    Nothing
+                        in
+                        { shot | turn = validated }
+
+                    else
+                        shot
+
+                updatedSide side =
+                    if side.id == forSide.id then
+                        let
+                            shots =
+                                let
+                                    missingShot shotNumber =
+                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
+                                in
+                                List.range 1 8
+                                    |> List.map
+                                        (\onShotNumber ->
+                                            case side.shots of
+                                                Just shots_ ->
+                                                    case
+                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
+                                                    of
+                                                        Just shot_ ->
+                                                            shot_
+
+                                                        Nothing ->
+                                                            missingShot onShotNumber
+
+                                                Nothing ->
+                                                    missingShot onShotNumber
+                                        )
+                        in
+                        { side | shots = Just (List.map updatedShot shots) }
+
+                    else
+                        side
+
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides }
+
+                        _ ->
+                            game
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateShotThrow forSide forShot val ->
+            let
+                updatedShot shot =
+                    if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
+                        let
+                            formattedVal =
+                                String.toUpper val
+
+                            valids =
+                                [ "A", "B", "C", "D", "E", "F", "G", "H", "J", "X" ]
+
+                            validated =
+                                if List.member formattedVal valids then
+                                    Just formattedVal
+
+                                else
+                                    Nothing
+                        in
+                        { shot | throw = validated }
+
+                    else
+                        shot
+
+                updatedSide side =
+                    if side.id == forSide.id then
+                        let
+                            shots =
+                                let
+                                    missingShot shotNumber =
+                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
+                                in
+                                List.range 1 8
+                                    |> List.map
+                                        (\onShotNumber ->
+                                            case side.shots of
+                                                Just shots_ ->
+                                                    case
+                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
+                                                    of
+                                                        Just shot_ ->
+                                                            shot_
+
+                                                        Nothing ->
+                                                            missingShot onShotNumber
+
+                                                Nothing ->
+                                                    missingShot onShotNumber
+                                        )
+                        in
+                        { side | shots = Just (List.map updatedShot shots) }
+
+                    else
+                        side
+
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides }
+
+                        _ ->
+                            game
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateShotRating forSide forShot val ->
+            let
+                updatedShot shot =
+                    -- TODO
+                    if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
+                        let
+                            formattedVal =
+                                String.toUpper val
+
+                            valids =
+                                [ "0", "1", "2", "3", "4", "V", "X" ]
+
+                            validated =
+                                if List.member formattedVal valids then
+                                    Just formattedVal
+
+                                else
+                                    Nothing
+                        in
+                        { shot | rating = validated }
+
+                    else
+                        shot
+
+                updatedSide side =
+                    if side.id == forSide.id then
+                        let
+                            shots =
+                                let
+                                    missingShot shotNumber =
+                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
+                                in
+                                List.range 1 8
+                                    |> List.map
+                                        (\onShotNumber ->
+                                            case side.shots of
+                                                Just shots_ ->
+                                                    case
+                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
+                                                    of
+                                                        Just shot_ ->
+                                                            shot_
+
+                                                        Nothing ->
+                                                            missingShot onShotNumber
+
+                                                Nothing ->
+                                                    missingShot onShotNumber
+                                        )
+                        in
+                        { side | shots = Just (List.map updatedShot shots) }
+
+                    else
+                        side
+
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides }
 
                         _ ->
                             game
@@ -1587,9 +1781,45 @@ viewShots side focusedEndNumber =
 
         viewShot : Shot -> Html Msg
         viewShot shot =
-            div [] [ text ("Shot" ++ String.fromInt shot.shotNumber) ]
+            tr []
+                [ td [] [ select [ class "shot-curler mr-1" ] [] ]
+                , td []
+                    [ input
+                        [ class "shot-turn mr-1 text-center"
+                        , value (Maybe.withDefault "" shot.turn)
+                        , onInput (UpdateShotTurn side shot)
+                        ]
+                        []
+                    ]
+                , td []
+                    [ input
+                        [ class "shot-throw mr-1 text-center"
+                        , value (Maybe.withDefault "" shot.throw)
+                        , onInput (UpdateShotThrow side shot)
+                        ]
+                        []
+                    ]
+                , td []
+                    [ input
+                        [ class "shot-rating mr-1 text-center"
+                        , value (Maybe.withDefault "" shot.rating)
+                        , onInput (UpdateShotRating side shot)
+                        ]
+                        []
+                    ]
+                ]
     in
-    div [] (List.map viewShot shots)
+    table [ class "mt-4 table table-sm" ]
+        [ thead []
+            [ tr []
+                [ th [] [ text "Curler" ]
+                , th [] [ text "Turn" ]
+                , th [] [ text "Throw" ]
+                , th [] [ text "Rating" ]
+                ]
+            ]
+        , tbody [] (List.map viewShot shots)
+        ]
 
 
 
