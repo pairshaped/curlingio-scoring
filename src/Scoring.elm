@@ -1809,16 +1809,19 @@ viewShots side focusedEndNumber =
                     ]
                 ]
     in
-    table [ class "mt-4 table table-sm" ]
-        [ thead []
-            [ tr []
-                [ th [] [ text "Curler" ]
-                , th [] [ text "Turn" ]
-                , th [] [ text "Throw" ]
-                , th [] [ text "Rating" ]
+    div [ class "mt-4" ]
+        [ h5 [] [ text ("Shots - End " ++ String.fromInt focusedEndNumber) ]
+        , table [ class "mt-4 table table-sm" ]
+            [ thead []
+                [ tr []
+                    [ th [] [ text "Curler" ]
+                    , th [] [ text "Turn" ]
+                    , th [] [ text "Throw" ]
+                    , th [] [ text "Rating" ]
+                    ]
                 ]
+            , tbody [] (List.map viewShot shots)
             ]
-        , tbody [] (List.map viewShot shots)
         ]
 
 
