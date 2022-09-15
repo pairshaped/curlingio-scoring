@@ -66,10 +66,17 @@ type alias Game =
     , drawId : Int
     , sheet : Int
     , name : String
-    , sides : ( Side, Side )
+    , state : GameState
+    , sides : Maybe ( Side, Side )
     , changed : Bool
     , focusedEndNumber : Int
     }
+
+
+type GameState
+    = GamePending
+    | GameActive
+    | GameComplete
 
 
 type alias Side =
@@ -159,6 +166,23 @@ rockColorDecoder =
         |> required "value" string
 
 
+gameStateDecoder : Decoder GameState
+gameStateDecoder =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "active" ->
+                        Decode.succeed GameActive
+
+                    "complete" ->
+                        Decode.succeed GameComplete
+
+                    _ ->
+                        Decode.succeed GamePending
+            )
+
+
 gameDecoder : Decoder Game
 gameDecoder =
     Decode.succeed Game
@@ -166,7 +190,21 @@ gameDecoder =
         |> required "draw_id" int
         |> required "sheet" int
         |> required "name" string
-        |> required "game_positions" sidesDecoder
+        |> required "state" gameStateDecoder
+        |> hardcoded Nothing
+        |> hardcoded False
+        |> hardcoded 1
+
+
+gameDetailsDecoder : Decoder Game
+gameDetailsDecoder =
+    Decode.succeed Game
+        |> required "id" string
+        |> required "draw_id" int
+        |> required "sheet" int
+        |> required "name" string
+        |> required "state" gameStateDecoder
+        |> optional "game_positions" (Decode.map Just sidesDecoder) Nothing
         |> hardcoded False
         |> hardcoded 1
 
@@ -235,7 +273,14 @@ sideResultDecoder =
 encodeGame : Game -> Encode.Value
 encodeGame game =
     Encode.object
-        [ ( "game_positions", Encode.list encodeSide [ Tuple.first game.sides, Tuple.second game.sides ] )
+        [ ( "game_positions"
+          , case game.sides of
+                Just sides ->
+                    Encode.list encodeSide [ Tuple.first sides, Tuple.second sides ]
+
+                Nothing ->
+                    Encode.null
+          )
         ]
 
 
@@ -376,7 +421,7 @@ getGame baseUrl id =
         url =
             baseUrl ++ "/games/" ++ id
     in
-    RemoteData.Http.get url GotGame gameDecoder
+    RemoteData.Http.get url GotGame gameDetailsDecoder
 
 
 patchGame : String -> Game -> Cmd Msg
@@ -385,7 +430,7 @@ patchGame baseUrl game =
         url =
             baseUrl ++ "/games/" ++ game.id
     in
-    RemoteData.Http.patch url PatchedGame gameDecoder (encodeGame game)
+    RemoteData.Http.patch url PatchedGame gameDetailsDecoder (encodeGame game)
 
 
 findGame : List Game -> Int -> Int -> Maybe Game
@@ -673,7 +718,12 @@ update msg model =
                 updatedGame game =
                     case model.data of
                         Success data ->
-                            { game | sides = correctEnds data.settings.numberOfEnds game.sides }
+                            case game.sides of
+                                Just sides ->
+                                    { game | sides = Just (correctEnds data.settings.numberOfEnds sides) }
+
+                                Nothing ->
+                                    game
 
                         _ ->
                             game
@@ -705,7 +755,12 @@ update msg model =
                             Success
                                 (case model.data of
                                     Success data ->
-                                        { game | sides = correctEnds data.settings.numberOfEnds game.sides }
+                                        case game.sides of
+                                            Just sides ->
+                                                { game | sides = Just (correctEnds data.settings.numberOfEnds sides) }
+
+                                            Nothing ->
+                                                game
 
                                     _ ->
                                         game
@@ -762,7 +817,12 @@ update msg model =
                     { side | firstHammer = not side.firstHammer }
 
                 updatedGame game =
-                    { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides, changed = True }
+                    case game.sides of
+                        Just sides ->
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+
+                        Nothing ->
+                            game
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
             , Cmd.none
@@ -778,7 +838,12 @@ update msg model =
                         side
 
                 updatedGame game =
-                    { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides, changed = True }
+                    case game.sides of
+                        Just sides ->
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+
+                        Nothing ->
+                            game
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
@@ -805,7 +870,12 @@ update msg model =
                         side
 
                 updatedGame game =
-                    { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides, changed = True }
+                    case game.sides of
+                        Just sides ->
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+
+                        Nothing ->
+                            game
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
@@ -838,12 +908,19 @@ update msg model =
                 updatedGame game =
                     case model.data of
                         Success data ->
-                            { game
-                                | sides =
-                                    Tuple.mapBoth updatedSide updatedSide game.sides
-                                        |> correctEnds data.settings.numberOfEnds
-                                , changed = True
-                            }
+                            case game.sides of
+                                Just sides ->
+                                    { game
+                                        | sides =
+                                            Just
+                                                (Tuple.mapBoth updatedSide updatedSide sides
+                                                    |> correctEnds data.settings.numberOfEnds
+                                                )
+                                        , changed = True
+                                    }
+
+                                Nothing ->
+                                    game
 
                         _ ->
                             game
@@ -899,12 +976,19 @@ update msg model =
                 updatedGame game =
                     case model.data of
                         Success data ->
-                            { game
-                                | sides =
-                                    ( updatedSide 0 (Tuple.first game.sides), updatedSide 1 (Tuple.second game.sides) )
-                                        |> correctEnds data.settings.numberOfEnds
-                                , changed = True
-                            }
+                            case game.sides of
+                                Just sides ->
+                                    { game
+                                        | sides =
+                                            Just
+                                                (( updatedSide 0 (Tuple.first sides), updatedSide 1 (Tuple.second sides) )
+                                                    |> correctEnds data.settings.numberOfEnds
+                                                )
+                                        , changed = True
+                                    }
+
+                                Nothing ->
+                                    game
 
                         _ ->
                             game
@@ -982,7 +1066,12 @@ update msg model =
                 updatedGame game =
                     case model.data of
                         Success data ->
-                            { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides }
+                            case game.sides of
+                                Just sides ->
+                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+
+                                Nothing ->
+                                    game
 
                         _ ->
                             game
@@ -1046,7 +1135,12 @@ update msg model =
                 updatedGame game =
                     case model.data of
                         Success data ->
-                            { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides }
+                            case game.sides of
+                                Just sides ->
+                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+
+                                Nothing ->
+                                    game
 
                         _ ->
                             game
@@ -1111,7 +1205,12 @@ update msg model =
                 updatedGame game =
                     case model.data of
                         Success data ->
-                            { game | sides = Tuple.mapBoth updatedSide updatedSide game.sides }
+                            case game.sides of
+                                Just sides ->
+                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+
+                                Nothing ->
+                                    game
 
                         _ ->
                             game
@@ -1258,44 +1357,26 @@ viewDraw data draw =
 
 viewDrawSheet : List Game -> Int -> Int -> Html Msg
 viewDrawSheet games drawId sheet =
+    let
+        viewDrawSheetGame game =
+            a
+                [ href "#"
+                , classList
+                    [ ( "text-secondary", game.state == GameComplete )
+                    , ( "font-weight-bold", game.state == GameActive )
+                    ]
+                , onClickPreventDefault (SelectGame game)
+                ]
+                [ text game.name ]
+    in
     td [ class "text-center" ]
         [ case findGame games drawId sheet of
             Just game ->
-                viewGame game
+                viewDrawSheetGame game
 
             Nothing ->
                 text ""
         ]
-
-
-viewGame : Game -> Html Msg
-viewGame game =
-    let
-        completed ( t, b ) =
-            let
-                sideCompleted side =
-                    side.result /= NoResult
-            in
-            sideCompleted t || sideCompleted b
-
-        inProgress ( t, b ) =
-            let
-                sideInProgress side =
-                    side.score /= Nothing && side.result == NoResult
-            in
-            sideInProgress t || sideInProgress b
-
-        resultClass =
-            if completed game.sides then
-                "text-secondary"
-
-            else if inProgress game.sides then
-                "font-weight-bold"
-
-            else
-                ""
-    in
-    a [ href "#", class resultClass, onClickPreventDefault (SelectGame game) ] [ text game.name ]
 
 
 viewSelectedGame : Model -> Data -> Game -> Html Msg
@@ -1309,11 +1390,15 @@ viewSelectedGame model data game =
             [ class "container" ]
             [ div
                 [ class "row justify-content-center align-items-center" ]
-                [ if data.settings.endScoresEnabled then
-                    viewSidesWithEndScores model data game
+                [ case ( data.settings.endScoresEnabled, game.sides ) of
+                    ( True, Just sides ) ->
+                        viewSidesWithEndScores model data game sides
 
-                  else
-                    viewSides model data game
+                    ( False, Just sides ) ->
+                        viewSides model data game sides
+
+                    _ ->
+                        text ""
                 ]
             ]
         ]
@@ -1332,8 +1417,8 @@ viewGameSaveMessage model =
             text ""
 
 
-viewSides : Model -> Data -> Game -> Html Msg
-viewSides model data game =
+viewSides : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
+viewSides model data game sides =
     let
         viewSide : Side -> Html Msg
         viewSide side =
@@ -1493,8 +1578,8 @@ viewSides model data game =
                     , hr [] []
                     , viewGameSaveMessage model
                     ]
-                    [ viewSide (Tuple.first game.sides)
-                    , viewSide (Tuple.second game.sides)
+                    [ viewSide (Tuple.first sides)
+                    , viewSide (Tuple.second sides)
                     ]
                 )
             , div
@@ -1516,13 +1601,13 @@ viewSides model data game =
         ]
 
 
-viewSidesWithEndScores : Model -> Data -> Game -> Html Msg
-viewSidesWithEndScores model data game =
+viewSidesWithEndScores : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
+viewSidesWithEndScores model data game sides =
     let
         numberOfEnds =
             let
                 ( top, bot ) =
-                    game.sides
+                    sides
             in
             List.length top.endScores
                 |> max (List.length bot.endScores)
@@ -1549,7 +1634,7 @@ viewSidesWithEndScores model data game =
                             ((sideIndex + endNumber) * 2) - sideIndex - 1
 
                         hasHammer =
-                            sideWithHammerInEnd game.sides (endNumber - 1) == Just sideIndex
+                            sideWithHammerInEnd sides (endNumber - 1) == Just sideIndex
                     in
                     td
                         [ classList
@@ -1711,15 +1796,15 @@ viewSidesWithEndScores model data game =
                                 :: List.map viewEndHeader (List.range 1 numberOfEnds)
                                 ++ [ th [ style "width" "50px" ] [ text "Total" ] ]
                             )
-                            :: [ viewSideEnds 0 (Tuple.first game.sides)
-                               , viewSideEnds 1 (Tuple.second game.sides)
+                            :: [ viewSideEnds 0 (Tuple.first sides)
+                               , viewSideEnds 1 (Tuple.second sides)
                                ]
                         )
                     ]
                 , hr [] []
                 , div [ class "d-flex justify-content-between" ]
-                    [ viewSideOther 0 (Tuple.first game.sides)
-                    , viewSideOther 1 (Tuple.second game.sides)
+                    [ viewSideOther 0 (Tuple.first sides)
+                    , viewSideOther 1 (Tuple.second sides)
                     ]
                 ]
             , div
