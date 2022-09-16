@@ -87,6 +87,7 @@ type alias Side =
     , score : Maybe Int
     , result : SideResult
     , endScores : List (Maybe Int)
+    , teamCurlers : List TeamCurler
     , shots : Maybe (List Shot)
     }
 
@@ -98,6 +99,13 @@ type alias Shot =
     , turn : Maybe String
     , throw : Maybe String
     , rating : Maybe String
+    }
+
+
+type alias TeamCurler =
+    { position : Int
+    , curlerId : Int
+    , name : String
     }
 
 
@@ -131,16 +139,16 @@ type SideResult
 -- DECODERS
 
 
-dataDecoder : Decoder Data
-dataDecoder =
+decodeData : Decoder Data
+decodeData =
     Decode.succeed Data
-        |> required "settings" settingsDecoder
-        |> required "draws" (list drawDecoder)
-        |> required "games" (list gameDecoder)
+        |> required "settings" decodeSettings
+        |> required "draws" (list decodeDraw)
+        |> required "games" (list decodeGame)
 
 
-settingsDecoder : Decoder Settings
-settingsDecoder =
+decodeSettings : Decoder Settings
+decodeSettings =
     Decode.succeed Settings
         |> required "event_name" string
         |> required "sheets" (list string)
@@ -148,26 +156,26 @@ settingsDecoder =
         |> required "end_scores_enabled" bool
         |> optional "number_of_ends" int 10
         |> required "shot_by_shot_enabled" bool
-        |> required "rock_colors" (list rockColorDecoder)
+        |> required "rock_colors" (list decodeRockColor)
 
 
-drawDecoder : Decoder Draw
-drawDecoder =
+decodeDraw : Decoder Draw
+decodeDraw =
     Decode.succeed Draw
         |> required "id" int
         |> required "label" string
         |> required "starts_at" string
 
 
-rockColorDecoder : Decoder RockColor
-rockColorDecoder =
+decodeRockColor : Decoder RockColor
+decodeRockColor =
     Decode.succeed RockColor
         |> required "key" string
         |> required "value" string
 
 
-gameStateDecoder : Decoder GameState
-gameStateDecoder =
+decodeGameState : Decoder GameState
+decodeGameState =
     Decode.string
         |> Decode.andThen
             (\str ->
@@ -183,54 +191,63 @@ gameStateDecoder =
             )
 
 
-gameDecoder : Decoder Game
-gameDecoder =
+decodeGame : Decoder Game
+decodeGame =
     Decode.succeed Game
         |> required "id" string
         |> required "draw_id" int
         |> required "sheet" int
         |> required "name" string
-        |> required "state" gameStateDecoder
+        |> required "state" decodeGameState
         |> hardcoded Nothing
         |> hardcoded False
         |> hardcoded 1
 
 
-gameDetailsDecoder : Decoder Game
-gameDetailsDecoder =
+decodeGameDetails : Decoder Game
+decodeGameDetails =
     Decode.succeed Game
         |> required "id" string
         |> required "draw_id" int
         |> required "sheet" int
         |> required "name" string
-        |> required "state" gameStateDecoder
-        |> optional "game_positions" (Decode.map Just sidesDecoder) Nothing
+        |> required "state" decodeGameState
+        |> optional "game_positions" (Decode.map Just decodeSides) Nothing
         |> hardcoded False
         |> hardcoded 1
 
 
-sidesDecoder : Decoder ( Side, Side )
-sidesDecoder =
+decodeSides : Decoder ( Side, Side )
+decodeSides =
     Decode.map2 Tuple.pair
-        (Decode.index 0 sideDecoder)
-        (Decode.index 1 sideDecoder)
+        (Decode.index 0 decodeSide)
+        (Decode.index 1 decodeSide)
 
 
-sideDecoder : Decoder Side
-sideDecoder =
+decodeSide : Decoder Side
+decodeSide =
     Decode.succeed Side
         |> required "id" int
         |> required "team_name" string
         |> required "rock_color" string
         |> required "first_hammer" bool
         |> optional "score" (nullable int) Nothing
-        |> optional "result" sideResultDecoder NoResult
+        |> optional "result" decodeSideResult NoResult
         |> optional "end_scores" (list (nullable int)) []
-        |> optional "shots" (nullable (list shotDecoder)) Nothing
+        |> optional "team_curlers" (list decodeTeamCurler) []
+        |> optional "shots" (nullable (list decodeShot)) Nothing
 
 
-shotDecoder : Decoder Shot
-shotDecoder =
+decodeTeamCurler : Decoder TeamCurler
+decodeTeamCurler =
+    Decode.succeed TeamCurler
+        |> required "position" int
+        |> required "curler_id" int
+        |> required "name" string
+
+
+decodeShot : Decoder Shot
+decodeShot =
     Decode.succeed Shot
         |> required "end_number" int
         |> required "shot_number" int
@@ -240,8 +257,8 @@ shotDecoder =
         |> optional "rating" (nullable string) Nothing
 
 
-sideResultDecoder : Decoder SideResult
-sideResultDecoder =
+decodeSideResult : Decoder SideResult
+decodeSideResult =
     Decode.string
         |> Decode.andThen
             (\str ->
@@ -412,7 +429,7 @@ getData baseUrl =
         url =
             baseUrl ++ "/games"
     in
-    RemoteData.Http.get url GotData dataDecoder
+    RemoteData.Http.get url GotData decodeData
 
 
 getGame : String -> String -> Cmd Msg
@@ -421,7 +438,7 @@ getGame baseUrl id =
         url =
             baseUrl ++ "/games/" ++ id
     in
-    RemoteData.Http.get url GotGame gameDetailsDecoder
+    RemoteData.Http.get url GotGame decodeGameDetails
 
 
 patchGame : String -> Game -> Cmd Msg
@@ -430,7 +447,7 @@ patchGame baseUrl game =
         url =
             baseUrl ++ "/games/" ++ game.id
     in
-    RemoteData.Http.patch url PatchedGame gameDetailsDecoder (encodeGame game)
+    RemoteData.Http.patch url PatchedGame decodeGameDetails (encodeGame game)
 
 
 findGame : List Game -> Int -> Int -> Maybe Game
