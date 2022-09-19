@@ -2,7 +2,7 @@ module Scoring exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, select, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, classList, disabled, href, id, style, tabindex, title, type_, value)
+import Html.Attributes exposing (class, classList, disabled, href, id, selected, style, tabindex, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onFocus, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -103,8 +103,7 @@ type alias Shot =
 
 
 type alias TeamCurler =
-    { position : Int
-    , curlerId : Int
+    { curlerId : Int
     , name : String
     }
 
@@ -241,7 +240,6 @@ decodeSide =
 decodeTeamCurler : Decoder TeamCurler
 decodeTeamCurler =
     Decode.succeed TeamCurler
-        |> required "position" int
         |> required "curler_id" int
         |> required "name" string
 
@@ -702,6 +700,7 @@ type Msg
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Int Int String
     | UpdateFocusedEndNumber Int
+    | UpdateShotCurlerId Side Shot String
     | UpdateShotTurn Side Shot String
     | UpdateShotThrow Side Shot String
     | UpdateShotRating Side Shot String
@@ -1020,6 +1019,61 @@ update msg model =
                     case model.data of
                         Success data ->
                             { game | focusedEndNumber = endNumber }
+
+                        _ ->
+                            game
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateShotCurlerId forSide forShot val ->
+            let
+                updatedShot shot =
+                    if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
+                        { shot | curlerId = String.toInt val }
+
+                    else
+                        shot
+
+                updatedSide side =
+                    if side.id == forSide.id then
+                        let
+                            shots =
+                                let
+                                    missingShot shotNumber =
+                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
+                                in
+                                List.range 1 8
+                                    |> List.map
+                                        (\onShotNumber ->
+                                            case side.shots of
+                                                Just shots_ ->
+                                                    case
+                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
+                                                    of
+                                                        Just shot_ ->
+                                                            shot_
+
+                                                        Nothing ->
+                                                            missingShot onShotNumber
+
+                                                Nothing ->
+                                                    missingShot onShotNumber
+                                        )
+                        in
+                        { side | shots = Just (List.map updatedShot shots) }
+
+                    else
+                        side
+
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            case game.sides of
+                                Just sides ->
+                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+
+                                Nothing ->
+                                    game
 
                         _ ->
                             game
@@ -1860,8 +1914,13 @@ viewShots side focusedEndNumber =
         shots : List Shot
         shots =
             let
+                curlerIdForShotNumber shotNumber =
+                    List.Extra.getAt (shotNumber - 1) side.teamCurlers
+                        |> Maybe.map (\c -> c.curlerId)
+
                 missingShot shotNumber =
-                    Shot focusedEndNumber shotNumber Nothing Nothing Nothing Nothing
+                    -- Find the curler for the shot, if there is one
+                    Shot focusedEndNumber shotNumber (curlerIdForShotNumber shotNumber) Nothing Nothing Nothing
             in
             List.range 1 8
                 |> List.map
@@ -1872,7 +1931,12 @@ viewShots side focusedEndNumber =
                                     List.Extra.find (\s -> s.endNumber == focusedEndNumber && s.shotNumber == onShotNumber) shots_
                                 of
                                     Just shot_ ->
-                                        shot_
+                                        case shot_.curlerId of
+                                            Nothing ->
+                                                { shot_ | curlerId = curlerIdForShotNumber onShotNumber }
+
+                                            _ ->
+                                                shot_
 
                                     Nothing ->
                                         missingShot onShotNumber
@@ -1883,8 +1947,30 @@ viewShots side focusedEndNumber =
 
         viewShot : Shot -> Html Msg
         viewShot shot =
+            let
+                viewCurlerOptions =
+                    let
+                        viewCurlerOption curlerIndex teamCurler =
+                            let
+                                isSelected =
+                                    ((curlerIndex + 1) * 2)
+                                        == shot.shotNumber
+                                        || (((curlerIndex + 1) * 2) - 1)
+                                        == shot.shotNumber
+                            in
+                            option [ selected isSelected, value (String.fromInt teamCurler.curlerId) ] [ text teamCurler.name ]
+                    in
+                    side.teamCurlers
+                        |> List.indexedMap viewCurlerOption
+            in
             tr []
-                [ td [] [ select [ class "shot-curler mr-1" ] [] ]
+                [ td []
+                    [ select
+                        [ class "shot-curler mr-1"
+                        , onInput (UpdateShotCurlerId side shot)
+                        ]
+                        viewCurlerOptions
+                    ]
                 , td []
                     [ input
                         [ class "shot-turn mr-1 text-center"
