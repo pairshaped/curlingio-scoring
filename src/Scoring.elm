@@ -679,6 +679,62 @@ correctEnds minNumberOfEnds ( top, bot ) =
             |> addMissingNothingEnds
 
 
+withInitializedShots : Bool -> ( Side, Side ) -> ( Side, Side )
+withInitializedShots shotByShotEnabled ( top, bot ) =
+    if shotByShotEnabled then
+        let
+            updatedSide : Side -> Side
+            updatedSide side =
+                let
+                    updatedShots : List Shot
+                    updatedShots =
+                        let
+                            updatedShotsForEnd : Int -> Maybe Int -> List Shot
+                            updatedShotsForEnd endNumber _ =
+                                let
+                                    curlerIdForShotNumber shotNumber =
+                                        List.Extra.getAt (shotNumber - 1) side.teamCurlers
+                                            |> Maybe.map (\c -> c.curlerId)
+
+                                    missingShot shotNumber =
+                                        -- Find the curler for the shot, if there is one
+                                        Shot (endNumber + 1) shotNumber (curlerIdForShotNumber shotNumber) Nothing Nothing Nothing
+                                in
+                                List.range 1 8
+                                    |> List.map
+                                        (\onShotNumber ->
+                                            case side.shots of
+                                                Just shots_ ->
+                                                    case
+                                                        List.Extra.find (\s -> s.endNumber == (endNumber + 1) && s.shotNumber == onShotNumber) shots_
+                                                    of
+                                                        Just shot_ ->
+                                                            case shot_.curlerId of
+                                                                Nothing ->
+                                                                    { shot_ | curlerId = curlerIdForShotNumber onShotNumber }
+
+                                                                _ ->
+                                                                    shot_
+
+                                                        Nothing ->
+                                                            missingShot onShotNumber
+
+                                                Nothing ->
+                                                    missingShot onShotNumber
+                                        )
+                        in
+                        side.endScores
+                            |> List.indexedMap updatedShotsForEnd
+                            |> List.concat
+                in
+                { side | shots = Just updatedShots }
+        in
+        ( updatedSide top, updatedSide bot )
+
+    else
+        ( top, bot )
+
+
 
 -- UPDATE
 
@@ -736,7 +792,13 @@ update msg model =
                         Success data ->
                             case game.sides of
                                 Just sides ->
-                                    { game | sides = Just (correctEnds data.settings.numberOfEnds sides) }
+                                    { game
+                                        | sides =
+                                            Just
+                                                (correctEnds data.settings.numberOfEnds sides
+                                                    |> withInitializedShots data.settings.shotByShotEnabled
+                                                )
+                                    }
 
                                 Nothing ->
                                     game
@@ -773,7 +835,13 @@ update msg model =
                                     Success data ->
                                         case game.sides of
                                             Just sides ->
-                                                { game | sides = Just (correctEnds data.settings.numberOfEnds sides) }
+                                                { game
+                                                    | sides =
+                                                        Just
+                                                            (correctEnds data.settings.numberOfEnds sides
+                                                                |> withInitializedShots data.settings.shotByShotEnabled
+                                                            )
+                                                }
 
                                             Nothing ->
                                                 game
@@ -1036,31 +1104,12 @@ update msg model =
 
                 updatedSide side =
                     if side.id == forSide.id then
-                        let
-                            shots =
-                                let
-                                    missingShot shotNumber =
-                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
-                                in
-                                List.range 1 8
-                                    |> List.map
-                                        (\onShotNumber ->
-                                            case side.shots of
-                                                Just shots_ ->
-                                                    case
-                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
-                                                    of
-                                                        Just shot_ ->
-                                                            shot_
+                        case side.shots of
+                            Just shots ->
+                                { side | shots = Just (List.map updatedShot shots) }
 
-                                                        Nothing ->
-                                                            missingShot onShotNumber
-
-                                                Nothing ->
-                                                    missingShot onShotNumber
-                                        )
-                        in
-                        { side | shots = Just (List.map updatedShot shots) }
+                            Nothing ->
+                                side
 
                     else
                         side
@@ -1105,31 +1154,12 @@ update msg model =
 
                 updatedSide side =
                     if side.id == forSide.id then
-                        let
-                            shots =
-                                let
-                                    missingShot shotNumber =
-                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
-                                in
-                                List.range 1 8
-                                    |> List.map
-                                        (\onShotNumber ->
-                                            case side.shots of
-                                                Just shots_ ->
-                                                    case
-                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
-                                                    of
-                                                        Just shot_ ->
-                                                            shot_
+                        case side.shots of
+                            Just shots ->
+                                { side | shots = Just (List.map updatedShot shots) }
 
-                                                        Nothing ->
-                                                            missingShot onShotNumber
-
-                                                Nothing ->
-                                                    missingShot onShotNumber
-                                        )
-                        in
-                        { side | shots = Just (List.map updatedShot shots) }
+                            Nothing ->
+                                side
 
                     else
                         side
@@ -1174,31 +1204,12 @@ update msg model =
 
                 updatedSide side =
                     if side.id == forSide.id then
-                        let
-                            shots =
-                                let
-                                    missingShot shotNumber =
-                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
-                                in
-                                List.range 1 8
-                                    |> List.map
-                                        (\onShotNumber ->
-                                            case side.shots of
-                                                Just shots_ ->
-                                                    case
-                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
-                                                    of
-                                                        Just shot_ ->
-                                                            shot_
+                        case side.shots of
+                            Just shots ->
+                                { side | shots = Just (List.map updatedShot shots) }
 
-                                                        Nothing ->
-                                                            missingShot onShotNumber
-
-                                                Nothing ->
-                                                    missingShot onShotNumber
-                                        )
-                        in
-                        { side | shots = Just (List.map updatedShot shots) }
+                            Nothing ->
+                                side
 
                     else
                         side
@@ -1244,31 +1255,12 @@ update msg model =
 
                 updatedSide side =
                     if side.id == forSide.id then
-                        let
-                            shots =
-                                let
-                                    missingShot shotNumber =
-                                        Shot forShot.endNumber shotNumber Nothing Nothing Nothing Nothing
-                                in
-                                List.range 1 8
-                                    |> List.map
-                                        (\onShotNumber ->
-                                            case side.shots of
-                                                Just shots_ ->
-                                                    case
-                                                        List.Extra.find (\s -> s.endNumber == forShot.endNumber && s.shotNumber == onShotNumber) shots_
-                                                    of
-                                                        Just shot_ ->
-                                                            shot_
+                        case side.shots of
+                            Just shots ->
+                                { side | shots = Just (List.map updatedShot shots) }
 
-                                                        Nothing ->
-                                                            missingShot onShotNumber
-
-                                                Nothing ->
-                                                    missingShot onShotNumber
-                                        )
-                        in
-                        { side | shots = Just (List.map updatedShot shots) }
+                            Nothing ->
+                                side
 
                     else
                         side
@@ -1911,40 +1903,6 @@ viewSidesWithEndScores model data game sides =
 viewShots : Side -> Int -> Html Msg
 viewShots side focusedEndNumber =
     let
-        shots : List Shot
-        shots =
-            let
-                curlerIdForShotNumber shotNumber =
-                    List.Extra.getAt (shotNumber - 1) side.teamCurlers
-                        |> Maybe.map (\c -> c.curlerId)
-
-                missingShot shotNumber =
-                    -- Find the curler for the shot, if there is one
-                    Shot focusedEndNumber shotNumber (curlerIdForShotNumber shotNumber) Nothing Nothing Nothing
-            in
-            List.range 1 8
-                |> List.map
-                    (\onShotNumber ->
-                        case side.shots of
-                            Just shots_ ->
-                                case
-                                    List.Extra.find (\s -> s.endNumber == focusedEndNumber && s.shotNumber == onShotNumber) shots_
-                                of
-                                    Just shot_ ->
-                                        case shot_.curlerId of
-                                            Nothing ->
-                                                { shot_ | curlerId = curlerIdForShotNumber onShotNumber }
-
-                                            _ ->
-                                                shot_
-
-                                    Nothing ->
-                                        missingShot onShotNumber
-
-                            Nothing ->
-                                missingShot onShotNumber
-                    )
-
         viewShot : Shot -> Html Msg
         viewShot shot =
             let
@@ -1996,6 +1954,15 @@ viewShots side focusedEndNumber =
                         []
                     ]
                 ]
+
+        shots =
+            case side.shots of
+                Just shots_ ->
+                    shots_
+                        |> List.filter (\s -> s.endNumber == focusedEndNumber)
+
+                Nothing ->
+                    []
     in
     div [ class "mt-4" ]
         [ h5 [] [ text ("Shots - End " ++ String.fromInt focusedEndNumber) ]
