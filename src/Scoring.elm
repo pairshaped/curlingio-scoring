@@ -679,6 +679,11 @@ correctEnds minNumberOfEnds ( top, bot ) =
             |> addMissingNothingEnds
 
 
+shotNumberToCurlerIndex : Int -> Int
+shotNumberToCurlerIndex shotNumber =
+    round (toFloat shotNumber / 2) - 1
+
+
 withInitializedShots : Bool -> ( Side, Side ) -> ( Side, Side )
 withInitializedShots shotByShotEnabled ( top, bot ) =
     if shotByShotEnabled then
@@ -693,7 +698,9 @@ withInitializedShots shotByShotEnabled ( top, bot ) =
                             updatedShotsForEnd endNumber _ =
                                 let
                                     curlerIdForShotNumber shotNumber =
-                                        List.Extra.getAt (shotNumber - 1) side.teamCurlers
+                                        -- We're turning the shot number into the curler index by doing: round (shotNumber / 2),
+                                        -- because there are 2 consecutive shots per curler, so the 7th shot should be the 4th curler (skip) for example.
+                                        List.Extra.getAt (shotNumberToCurlerIndex shotNumber) side.teamCurlers
                                             |> Maybe.map (\c -> c.curlerId)
 
                                     missingShot shotNumber =
@@ -1911,10 +1918,7 @@ viewShots side focusedEndNumber =
                         viewCurlerOption curlerIndex teamCurler =
                             let
                                 isSelected =
-                                    ((curlerIndex + 1) * 2)
-                                        == shot.shotNumber
-                                        || (((curlerIndex + 1) * 2) - 1)
-                                        == shot.shotNumber
+                                    shotNumberToCurlerIndex shot.shotNumber == curlerIndex
                             in
                             option [ selected isSelected, value (String.fromInt teamCurler.curlerId) ] [ text teamCurler.name ]
                     in
@@ -1925,6 +1929,7 @@ viewShots side focusedEndNumber =
                 [ td []
                     [ select
                         [ class "shot-curler mr-1"
+                        , value (String.fromInt (Maybe.withDefault -1 shot.curlerId))
                         , onInput (UpdateShotCurlerId side shot)
                         ]
                         viewCurlerOptions
