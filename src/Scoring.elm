@@ -1930,7 +1930,7 @@ viewShots side focusedEndNumber =
             tr []
                 [ td []
                     [ select
-                        [ class "shot-curler mr-1"
+                        [ class "shot-curler mr-1 form-control"
                         , value (String.fromInt (Maybe.withDefault -1 shot.curlerId))
                         , onInput (UpdateShotCurlerId side shot)
                         ]
@@ -1938,7 +1938,7 @@ viewShots side focusedEndNumber =
                     ]
                 , td []
                     [ input
-                        [ class "shot-turn mr-1 text-center"
+                        [ class "shot-turn mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.turn)
                         , onInput (UpdateShotTurn side shot)
                         ]
@@ -1946,7 +1946,7 @@ viewShots side focusedEndNumber =
                     ]
                 , td []
                     [ input
-                        [ class "shot-throw mr-1 text-center"
+                        [ class "shot-throw mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.throw)
                         , onInput (UpdateShotThrow side shot)
                         ]
@@ -1954,7 +1954,7 @@ viewShots side focusedEndNumber =
                     ]
                 , td []
                     [ input
-                        [ class "shot-rating mr-1 text-center"
+                        [ class "shot-rating mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.rating)
                         , onInput (UpdateShotRating side shot)
                         ]
@@ -1981,9 +1981,9 @@ viewShots side focusedEndNumber =
                 [ thead []
                     [ tr []
                         [ th [] [ text "Curler" ]
-                        , th [] [ text "Turn" ]
-                        , th [] [ text "Throw" ]
-                        , th [] [ text "Rating" ]
+                        , th [ class "text-center" ] [ text "Turn" ]
+                        , th [ class "text-center" ] [ text "Throw" ]
+                        , th [ class "text-center" ] [ text "Rate" ]
                         ]
                     ]
                 , tbody [] (List.map viewShot shots)
