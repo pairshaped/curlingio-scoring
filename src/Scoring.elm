@@ -1818,13 +1818,13 @@ viewSidesWithEndScores model data game sides =
                     [ h5 [ class "mr-2" ] [ text side.teamName ]
                     , h5 [] [ text scoreForDisplay ]
                     ]
-                , viewSideColor
-                , viewSideResult
                 , if data.settings.shotByShotEnabled then
                     viewShots side game.focusedEndNumber
 
                   else
                     text ""
+                , viewSideColor
+                , viewSideResult
                 ]
     in
     div
@@ -1964,19 +1964,24 @@ viewShots side focusedEndNumber =
                 Nothing ->
                     []
     in
-    div [ class "mt-4" ]
+    div [ class "mt-4 mb-2" ]
         [ h5 [] [ text ("Shots - End " ++ String.fromInt focusedEndNumber) ]
-        , table [ class "mt-4 table table-sm" ]
-            [ thead []
-                [ tr []
-                    [ th [] [ text "Curler" ]
-                    , th [] [ text "Turn" ]
-                    , th [] [ text "Throw" ]
-                    , th [] [ text "Rating" ]
+        , if List.isEmpty side.teamCurlers then
+            div [ class "alert alert-danger m-1" ] [ text "No curlers have been assigned. You must first assign curlers to the team before you can record shot by shot." ]
+
+          else
+            table [ class "mt-2 table table-sm" ]
+                [ thead []
+                    [ tr []
+                        [ th [] [ text "Curler" ]
+                        , th [] [ text "Turn" ]
+                        , th [] [ text "Throw" ]
+                        , th [] [ text "Rating" ]
+                        ]
                     ]
+                , tbody [] (List.map viewShot shots)
                 ]
-            , tbody [] (List.map viewShot shots)
-            ]
+        , hr [] []
         ]
 
 
