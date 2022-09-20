@@ -756,7 +756,7 @@ type Msg
     | GotGame (WebData Game)
     | SaveGame
     | PatchedGame (WebData Game)
-    | ResetSavedGame Time.Posix
+    | ResetSavedGameMessage Time.Posix
     | ReloadGame
     | CloseGame
     | SwapFirstHammer
@@ -830,12 +830,20 @@ update msg model =
             ( { model | savedGame = Loading }
             , Cmd.batch
                 [ sendPatch
-                , Task.perform ResetSavedGame (Process.sleep 6000 |> Task.andThen (\_ -> Time.now))
+                , Task.perform ResetSavedGameMessage (Process.sleep 6000 |> Task.andThen (\_ -> Time.now))
                 ]
             )
 
         PatchedGame response ->
             let
+                focusedEndNumber =
+                    case model.selectedGame of
+                        Success game ->
+                            game.focusedEndNumber
+
+                        _ ->
+                            1
+
                 selectedGame =
                     case response of
                         Success game ->
@@ -850,13 +858,14 @@ update msg model =
                                                             (correctEnds data.settings.numberOfEnds sides
                                                                 |> withInitializedShots data.settings.shotByShotEnabled
                                                             )
+                                                    , focusedEndNumber = focusedEndNumber
                                                 }
 
                                             Nothing ->
-                                                game
+                                                { game | focusedEndNumber = focusedEndNumber }
 
                                     _ ->
-                                        game
+                                        { game | focusedEndNumber = focusedEndNumber }
                                 )
 
                         _ ->
@@ -889,7 +898,7 @@ update msg model =
             , Cmd.none
             )
 
-        ResetSavedGame t ->
+        ResetSavedGameMessage t ->
             -- This will clear the save message in our view.
             ( { model | savedGame = NotAsked }, Cmd.none )
 
