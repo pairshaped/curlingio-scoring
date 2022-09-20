@@ -334,7 +334,9 @@ encodeSide side =
 encodeShot : Shot -> Encode.Value
 encodeShot shot =
     Encode.object
-        [ ( "curler_id"
+        [ ( "end_number", Encode.int shot.endNumber )
+        , ( "shot_number", Encode.int shot.shotNumber )
+        , ( "curler_id"
           , case shot.curlerId of
                 Just curlerId ->
                     Encode.int curlerId
