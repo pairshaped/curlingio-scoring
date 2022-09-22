@@ -721,7 +721,7 @@ withInitializedShots shotByShotEnabled ( top, bot ) =
                                         -- Find the curler for the shot, if there is one
                                         Shot (endNumber + 1) shotNumber (curlerIdForShotNumber shotNumber) Nothing Nothing Nothing
                                 in
-                                List.range 1 (List.length side.endScores)
+                                List.range 1 8
                                     |> List.map
                                         (\onShotNumber ->
                                             case side.shots of
