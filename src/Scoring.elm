@@ -531,18 +531,18 @@ rockColorValueForLabel rockColors key =
         |> Maybe.withDefault ""
 
 
-sideWithHammerInEnd : ( Side, Side ) -> Int -> Maybe Int
-sideWithHammerInEnd ( top, bot ) endIndex =
+hasHammerInEnd : Side -> ( Side, Side ) -> Int -> Maybe Bool
+hasHammerInEnd onSide ( top, bot ) endIndex =
     -- Figures out which side has hammer for a specific end (index).
     -- For example, you can pass in both sides and an endIndex of 4, and we'll figure out who won the 3rd end, and return which side index gets hammer in the 4th (0 or 1)
     if endIndex == 0 then
         -- First hammer (LSFE)
-        if top.firstHammer then
-            Just 0
+        if onSide.firstHammer then
+            Just True
 
         else
             -- Either bottom has first hammer, or one isn't set and we default to bottom position
-            Just 1
+            Just False
 
     else
         case ( List.Extra.getAt (endIndex - 1) top.endScores, List.Extra.getAt (endIndex - 1) bot.endScores ) of
@@ -551,27 +551,27 @@ sideWithHammerInEnd ( top, bot ) endIndex =
                     ( Just topScore, Just botScore ) ->
                         if topScore < botScore then
                             -- top lost previous end, so top has next hammer
-                            Just 0
+                            Just (top.id == onSide.id)
 
                         else if topScore > botScore then
                             -- top won previous end, so bot has next hammer
-                            Just 1
+                            Just (bot.id == onSide.id)
 
                         else
                             -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                            sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                            hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
 
                     ( Nothing, Just _ ) ->
-                        -- top lost previous end, so bot has next hammer
-                        Just 0
+                        -- top lost previous end, so top has next hammer
+                        Just (top.id == onSide.id)
 
                     ( Just _, Nothing ) ->
                         -- bot lost previous end, so bot has next hammer
-                        Just 1
+                        Just (bot.id == onSide.id)
 
                     ( Nothing, Nothing ) ->
                         -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                        -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                        -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
                         Nothing
 
             ( Nothing, Just botScore_ ) ->
@@ -580,15 +580,15 @@ sideWithHammerInEnd ( top, bot ) endIndex =
                     Just botScore ->
                         if botScore > 0 then
                             -- top lost previous end, give top next hammer
-                            Just 0
+                            Just (top.id == onSide.id)
 
                         else
                             -- tied, recurse
-                            sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                            hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
 
                     Nothing ->
                         -- tied, recurse
-                        -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                        -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
                         Nothing
 
             ( Just topScore_, Nothing ) ->
@@ -597,25 +597,25 @@ sideWithHammerInEnd ( top, bot ) endIndex =
                     Just topScore ->
                         if topScore > 0 then
                             -- top won previous end, give bot next hammer
-                            Just 1
+                            Just (bot.id == onSide.id)
 
                         else
                             -- tied, recurse
-                            sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                            hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
 
                     Nothing ->
                         -- tied, recurse
-                        -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                        -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
                         Nothing
 
             ( Nothing, Nothing ) ->
                 -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                -- sideWithHammerInEnd ( top, bot ) (endIndex - 1)
+                -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
                 Nothing
 
 
-correctEnds : Int -> ( Side, Side ) -> ( Side, Side )
-correctEnds minNumberOfEnds ( top, bot ) =
+correctEnds : Settings -> ( Side, Side ) -> ( Side, Side )
+correctEnds { numberOfEnds, shotByShotEnabled } ( top, bot ) =
     let
         countEndsScored endScores =
             endScores
@@ -631,14 +631,14 @@ correctEnds minNumberOfEnds ( top, bot ) =
             top.result /= Tied && bot.result /= Tied
 
         minEndsAreScored =
-            (countEndsScored top.endScores >= minNumberOfEnds)
-                && (countEndsScored bot.endScores >= minNumberOfEnds)
+            (countEndsScored top.endScores >= numberOfEnds)
+                && (countEndsScored bot.endScores >= numberOfEnds)
 
         scoresAreTied =
             totalScore top.endScores == totalScore bot.endScores
 
         removeNothingEnds ( t, b ) =
-            -- Remove all nothings, then add them back up to the minNumberOfEnds
+            -- Remove all nothings, then add them back up to the numberOfEnds
             let
                 filtered side =
                     { side
@@ -653,7 +653,7 @@ correctEnds minNumberOfEnds ( top, bot ) =
             let
                 addMissing side =
                     if List.length side.endScores < 10 then
-                        { side | endScores = side.endScores ++ List.map (\_ -> Nothing) (List.range 1 (minNumberOfEnds - List.length side.endScores)) }
+                        { side | endScores = side.endScores ++ List.map (\_ -> Nothing) (List.range 1 (numberOfEnds - List.length side.endScores)) }
 
                     else
                         let
@@ -673,7 +673,7 @@ correctEnds minNumberOfEnds ( top, bot ) =
             in
             ( addNothing t, addNothing b )
     in
-    if minEndsAreScored then
+    (if minEndsAreScored then
         if noTieDeclared && scoresAreTied then
             -- Natural tie
             -- Leave one column of double Nothing values, but remove everything after it.
@@ -686,9 +686,11 @@ correctEnds minNumberOfEnds ( top, bot ) =
             removeNothingEnds ( top, bot )
                 |> addMissingNothingEnds
 
-    else
+     else
         removeNothingEnds ( top, bot )
             |> addMissingNothingEnds
+    )
+        |> withInitializedShots shotByShotEnabled
 
 
 shotNumberToCurlerIndex : Int -> Int
@@ -719,7 +721,7 @@ withInitializedShots shotByShotEnabled ( top, bot ) =
                                         -- Find the curler for the shot, if there is one
                                         Shot (endNumber + 1) shotNumber (curlerIdForShotNumber shotNumber) Nothing Nothing Nothing
                                 in
-                                List.range 1 8
+                                List.range 1 (List.length side.endScores)
                                     |> List.map
                                         (\onShotNumber ->
                                             case side.shots of
@@ -815,9 +817,7 @@ update msg model =
                                     { game
                                         | sides =
                                             Just
-                                                (correctEnds data.settings.numberOfEnds sides
-                                                    |> withInitializedShots data.settings.shotByShotEnabled
-                                                )
+                                                (correctEnds data.settings sides)
                                     }
 
                                 Nothing ->
@@ -866,9 +866,7 @@ update msg model =
                                                 { game
                                                     | sides =
                                                         Just
-                                                            (correctEnds data.settings.numberOfEnds sides
-                                                                |> withInitializedShots data.settings.shotByShotEnabled
-                                                            )
+                                                            (correctEnds data.settings sides)
                                                     , focusedEndNumber = focusedEndNumber
                                                 }
 
@@ -1035,7 +1033,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds data.settings.numberOfEnds
+                                                    |> correctEnds data.settings
                                                 )
                                         , changed = True
                                     }
@@ -1083,7 +1081,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds data.settings.numberOfEnds
+                                                    |> correctEnds data.settings
                                                 )
                                         , changed = True
                                     }
@@ -1151,7 +1149,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (( updatedSide 0 (Tuple.first sides), updatedSide 1 (Tuple.second sides) )
-                                                    |> correctEnds data.settings.numberOfEnds
+                                                    |> correctEnds data.settings
                                                 )
                                         , changed = True
                                     }
@@ -1707,7 +1705,7 @@ viewSidesWithEndScores model data game sides =
                             ((sideIndex + endNumber) * 2) - sideIndex - 1
 
                         hasHammer =
-                            sideWithHammerInEnd sides (endNumber - 1) == Just sideIndex
+                            Maybe.withDefault False (hasHammerInEnd side sides (endNumber - 1))
                     in
                     td
                         [ classList
@@ -1749,8 +1747,8 @@ viewSidesWithEndScores model data game sides =
                     ++ [ th [ class "text-center px-2", style "padding-top" "12px" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
                 )
 
-        viewSideOther : Int -> Side -> Html Msg
-        viewSideOther sideIdx side =
+        viewSideOther : Side -> Html Msg
+        viewSideOther side =
             let
                 scoreForDisplay =
                     case side.score of
@@ -1851,6 +1849,14 @@ viewSidesWithEndScores model data game sides =
                 , viewSideResult
                 , viewSideTimeRemaining
                 ]
+
+        sidesOrdered =
+            -- If shot by shot is enabled, the side with the hammer should always show up last (on the right).
+            if data.settings.shotByShotEnabled then
+                sides
+
+            else
+                sides
     in
     div
         [ class "col-12 col-xl-10" ]
@@ -1891,8 +1897,8 @@ viewSidesWithEndScores model data game sides =
                     ]
                 , hr [] []
                 , div [ class "d-flex justify-content-between" ]
-                    [ viewSideOther 0 (Tuple.first sides)
-                    , viewSideOther 1 (Tuple.second sides)
+                    [ viewSideOther (Tuple.first sidesOrdered)
+                    , viewSideOther (Tuple.second sidesOrdered)
                     ]
                 ]
             , div
