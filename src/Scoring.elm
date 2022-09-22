@@ -2,7 +2,7 @@ module Scoring exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, select, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, classList, disabled, href, id, selected, style, tabindex, title, type_, value)
+import Html.Attributes exposing (class, classList, disabled, href, id, placeholder, selected, style, tabindex, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onFocus, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -84,6 +84,7 @@ type alias Side =
     , teamName : String
     , rockColor : String
     , firstHammer : Bool
+    , timeRemaining : Maybe String
     , score : Maybe Int
     , result : SideResult
     , endScores : List (Maybe Int)
@@ -230,6 +231,7 @@ decodeSide =
         |> required "team_name" string
         |> required "rock_color" string
         |> required "first_hammer" bool
+        |> optional "time_remaining" (nullable string) Nothing
         |> optional "score" (nullable int) Nothing
         |> optional "result" decodeSideResult NoResult
         |> optional "end_scores" (list (nullable int)) []
@@ -306,6 +308,14 @@ encodeSide side =
         , ( "team_name", Encode.string side.teamName )
         , ( "rock_color", Encode.string side.rockColor )
         , ( "first_hammer", Encode.bool side.firstHammer )
+        , ( "time_remaining"
+          , case side.timeRemaining of
+                Just timeRemaining ->
+                    Encode.string timeRemaining
+
+                Nothing ->
+                    Encode.null
+          )
         , ( "score", maybe Encode.int side.score )
         , ( "result", encodeSideResult side.result )
         , ( "end_scores"
@@ -762,6 +772,7 @@ type Msg
     | SwapFirstHammer
     | UpdateSideColor Side RockColor
     | UpdateSideScore Side String
+    | UpdateSideTimeRemaining Side String
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Int Int String
     | UpdateFocusedEndNumber Int
@@ -930,10 +941,10 @@ update msg model =
             , Cmd.none
             )
 
-        UpdateSideColor sideIndex newColor ->
+        UpdateSideColor onSide newColor ->
             let
                 updatedSide side =
-                    if side.id == sideIndex.id then
+                    if side.id == onSide.id then
                         { side | rockColor = newColor.key }
 
                     else
@@ -949,10 +960,10 @@ update msg model =
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
-        UpdateSideScore sideIndex newScore ->
+        UpdateSideScore onSide newScore ->
             let
                 updatedSide side =
-                    if side.id == sideIndex.id then
+                    if side.id == onSide.id then
                         let
                             updatedScore =
                                 case String.toInt newScore of
@@ -981,10 +992,66 @@ update msg model =
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
-        UpdateSideResult sideIndex newResult ->
+        UpdateSideTimeRemaining onSide newTimeRemaining ->
             let
                 updatedSide side =
-                    if side.id == sideIndex.id then
+                    if side.id == onSide.id then
+                        let
+                            validTime =
+                                if newTimeRemaining == "" then
+                                    False
+
+                                else
+                                    let
+                                        isNumber v =
+                                            case String.toInt v of
+                                                Just v_ ->
+                                                    True
+
+                                                Nothing ->
+                                                    False
+                                    in
+                                    if isNumber (String.replace ":" "" newTimeRemaining) then
+                                        True
+
+                                    else
+                                        False
+                        in
+                        if validTime then
+                            { side | timeRemaining = Just newTimeRemaining }
+
+                        else
+                            { side | timeRemaining = Nothing }
+
+                    else
+                        side
+
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            case game.sides of
+                                Just sides ->
+                                    { game
+                                        | sides =
+                                            Just
+                                                (Tuple.mapBoth updatedSide updatedSide sides
+                                                    |> correctEnds data.settings.numberOfEnds
+                                                )
+                                        , changed = True
+                                    }
+
+                                Nothing ->
+                                    game
+
+                        _ ->
+                            game
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateSideResult onSide newResult ->
+            let
+                updatedSide side =
+                    if side.id == onSide.id then
                         { side | result = newResult }
 
                     else
@@ -1503,14 +1570,9 @@ viewSides model data game sides =
     let
         viewSide : Side -> Html Msg
         viewSide side =
-            p
-                []
-                [ h5
-                    [ class "card-text" ]
-                    [ text side.teamName ]
-                , div
-                    [ class "d-flex" ]
-                    [ input
+            let
+                viewSideScore =
+                    input
                         [ class "form-control mr-3"
                         , style "width" "60px"
                         , style "margin-top" "-1px"
@@ -1528,110 +1590,40 @@ viewSides model data game sides =
                         , onInput (UpdateSideScore side)
                         ]
                         []
-                    , div
-                        [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left" ]
-                        [ button
-                            [ type_ "button"
-                            , onClick (UpdateSideResult side Won)
-                            , style "margin-top" "-1px"
-                            , style "margin-left" "-1px"
-                            , class
-                                ("btn btn-outline-success"
-                                    ++ (case side.result of
-                                            Won ->
+
+                viewSideResult =
+                    let
+                        viewResultButton : SideResult -> Html Msg
+                        viewResultButton result =
+                            button
+                                [ type_ "button"
+                                , onClick (UpdateSideResult side result)
+                                , style "margin-top" "-1px"
+                                , style "margin-left" "-1px"
+                                , class
+                                    (("btn btn-outline-" ++ sideResultColor result)
+                                        ++ (if side.result == result then
                                                 " active"
 
-                                            _ ->
+                                            else
                                                 ""
-                                       )
-                                )
-                            ]
-                            [ text "Won" ]
-                        , button
-                            [ type_ "button"
-                            , onClick (UpdateSideResult side Lost)
-                            , style "margin-top" "-1px"
-                            , class
-                                ("btn btn-outline-danger"
-                                    ++ (case side.result of
-                                            Lost ->
-                                                " active"
-
-                                            _ ->
-                                                ""
-                                       )
-                                )
-                            ]
-                            [ text "Lost" ]
-                        , button
-                            [ type_ "button"
-                            , onClick (UpdateSideResult side Conceded)
-                            , style "margin-top" "-1px"
-                            , class
-                                ("btn btn-outline-danger"
-                                    ++ (case side.result of
-                                            Conceded ->
-                                                " active"
-
-                                            _ ->
-                                                ""
-                                       )
-                                )
-                            ]
-                            [ span [ class "d-none d-md-inline" ] [ text "Conceded" ]
-                            , span [ class "d-md-none" ] [ text "Con" ]
-                            ]
-                        , button
-                            [ type_ "button"
-                            , onClick (UpdateSideResult side Forfeited)
-                            , style "margin-top" "-1px"
-                            , class
-                                ("btn btn-outline-danger"
-                                    ++ (case side.result of
-                                            Forfeited ->
-                                                " active"
-
-                                            _ ->
-                                                ""
-                                       )
-                                )
-                            ]
-                            [ span [ class "d-none d-md-inline" ] [ text "Forfeited" ]
-                            , span [ class "d-md-none" ] [ text "For" ]
-                            ]
-                        , button
-                            [ type_ "button"
-                            , onClick (UpdateSideResult side Tied)
-                            , style "margin-top" "-1px"
-                            , class
-                                ("btn btn-outline-info"
-                                    ++ (case side.result of
-                                            Tied ->
-                                                " active"
-
-                                            _ ->
-                                                ""
-                                       )
-                                )
-                            ]
-                            [ text "Tied" ]
-                        , button
-                            [ type_ "button"
-                            , onClick (UpdateSideResult side NoResult)
-                            , style "margin-top" "-1px"
-                            , class
-                                ("btn btn-outline-secondary"
-                                    ++ (case side.result of
-                                            NoResult ->
-                                                " active"
-
-                                            _ ->
-                                                ""
-                                       )
-                                )
-                            ]
-                            [ text "TBD" ]
-                        ]
+                                           )
+                                    )
+                                ]
+                                [ text (sideResultForDisplay result) ]
+                    in
+                    div
+                        [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
+                        (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
+            in
+            p
+                []
+                [ h5
+                    [ class "card-text" ]
+                    [ text side.teamName ]
+                , div [ class "d-flex " ]
+                    [ viewSideScore
+                    , viewSideResult
                     ]
                 ]
     in
@@ -1799,6 +1791,20 @@ viewSidesWithEndScores model data game sides =
                             (List.map viewColorButton data.settings.rockColors)
                         ]
 
+                viewSideTimeRemaining : Html Msg
+                viewSideTimeRemaining =
+                    div [ class "d-flex mt-3 form-group" ]
+                        [ label [ class "label mr-2 mt-2" ] [ text "Time Remaining:" ]
+                        , input
+                            [ class "form-control"
+                            , style "width" "100px"
+                            , value (Maybe.withDefault "" side.timeRemaining)
+                            , placeholder "MM:SS"
+                            , onInput (UpdateSideTimeRemaining side)
+                            ]
+                            []
+                        ]
+
                 viewSideResult : Html Msg
                 viewSideResult =
                     let
@@ -1843,6 +1849,7 @@ viewSidesWithEndScores model data game sides =
                     text ""
                 , viewSideColor
                 , viewSideResult
+                , viewSideTimeRemaining
                 ]
     in
     div
