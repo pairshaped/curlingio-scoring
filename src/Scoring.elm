@@ -1853,7 +1853,15 @@ viewSidesWithEndScores model data game sides =
         sidesOrdered =
             -- If shot by shot is enabled, the side with the hammer should always show up last (on the right).
             if data.settings.shotByShotEnabled then
-                sides
+                let
+                    ( top, bot ) =
+                        sides
+                in
+                if Maybe.withDefault False (hasHammerInEnd top sides (game.focusedEndNumber - 1)) then
+                    ( bot, top )
+
+                else
+                    sides
 
             else
                 sides
