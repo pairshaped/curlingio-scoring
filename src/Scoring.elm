@@ -81,8 +81,8 @@ type GameState
 
 type alias Side =
     { id : Int
+    , position : Int
     , teamName : String
-    , rockColor : String
     , firstHammer : Bool
     , timeRemaining : Maybe String
     , score : Maybe Int
@@ -230,8 +230,8 @@ decodeSide : Decoder Side
 decodeSide =
     Decode.succeed Side
         |> required "id" int
+        |> required "position" int
         |> required "team_name" string
-        |> required "rock_color" string
         |> required "first_hammer" bool
         |> optional "time_remaining" (nullable string) Nothing
         |> optional "score" (nullable int) Nothing
@@ -307,8 +307,8 @@ encodeSide : Side -> Encode.Value
 encodeSide side =
     Encode.object
         [ ( "id", Encode.int side.id )
+        , ( "position", Encode.int side.position )
         , ( "team_name", Encode.string side.teamName )
-        , ( "rock_color", Encode.string side.rockColor )
         , ( "first_hammer", Encode.bool side.firstHammer )
         , ( "time_remaining"
           , case side.timeRemaining of
@@ -521,14 +521,14 @@ sideResultColor result =
             "secondary"
 
 
-rockColorForLabel : List RockColor -> String -> Maybe RockColor
-rockColorForLabel rockColors key =
-    List.Extra.find (\rc -> rc.key == key) rockColors
+rockColorForLabel : List RockColor -> Int -> Maybe RockColor
+rockColorForLabel rockColors position =
+    List.Extra.find (\rc -> rc.pos == position) rockColors
 
 
-rockColorValueForLabel : List RockColor -> String -> String
-rockColorValueForLabel rockColors key =
-    rockColorForLabel rockColors key
+rockColorValueForLabel : List RockColor -> Int -> String
+rockColorValueForLabel rockColors position =
+    rockColorForLabel rockColors position
         |> Maybe.map (\rc -> rc.val)
         |> Maybe.withDefault ""
 
@@ -780,7 +780,7 @@ type Msg
     | ReloadGame
     | CloseGame
     | SwapFirstHammer
-    | UpdateSideColor Side RockColor
+    | UpdateSidePosition Side Int
     | UpdateSideScore Side String
     | UpdateSideTimeRemaining Side String
     | UpdateSideResult Side SideResult
@@ -951,24 +951,15 @@ update msg model =
             , Cmd.none
             )
 
-        UpdateSideColor onSide newColor ->
+        UpdateSidePosition onSide newPosition ->
             let
                 updatedSide side =
                     if side.id == onSide.id then
-                        { side | rockColor = newColor.key }
+                        { side | position = newPosition }
 
                     else
-                        case model.data of
-                            Success data ->
-                                case List.Extra.find (\c -> c.key /= newColor.key) data.settings.rockColors of
-                                    Just color ->
-                                        { side | rockColor = color.key }
-
-                                    Nothing ->
-                                        side
-
-                            _ ->
-                                side
+                        -- subtracting 1 and getting the absolute is the same as if 1 then 0 and if 0 then 1.
+                        { side | position = abs (newPosition - 1) }
 
                 updatedGame game =
                     case game.sides of
@@ -1772,7 +1763,14 @@ viewSidesWithEndScores model data game sides =
             tr []
                 (td [ class "p-2" ]
                     [ div [ class "d-flex" ]
-                        [ div [ style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.rockColor) ] [ text side.teamName ]
+                        [ div
+                            [ style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.position) ]
+                            [ text side.teamName ]
+                        , if side.firstHammer then
+                            span [ class "ml-2" ] [ text "*" ]
+
+                          else
+                            text ""
                         ]
                     ]
                     :: List.map viewEndForSide (List.range 1 numberOfEnds)
@@ -1793,15 +1791,17 @@ viewSidesWithEndScores model data game sides =
                 viewSideColor : Html Msg
                 viewSideColor =
                     let
-                        viewColorButton : RockColor -> Html Msg
-                        viewColorButton rockColor =
+                        viewColorButton : Int -> RockColor -> Html Msg
+                        viewColorButton idx rockColor =
                             div
-                                [ onClick (UpdateSideColor side rockColor)
+                                [ onClick (UpdateSidePosition side idx)
                                 , classList
                                     [ ( "color-btn", True )
-                                    , ( "active", side.rockColor == rockColor.key )
+                                    , ( "mr-1", True )
+                                    , ( "active", side.position == rockColor.pos )
                                     ]
                                 , style "background-color" rockColor.val
+                                , style "border" "1px solid black"
                                 ]
                                 [ text "" ]
                     in
@@ -1818,7 +1818,7 @@ viewSidesWithEndScores model data game sides =
                             ]
                             [ text "First Hammer" ]
                         , div [ class "d-flex align-items-center" ]
-                            (List.map viewColorButton data.settings.rockColors)
+                            (List.indexedMap viewColorButton data.settings.rockColors)
                         ]
 
                 viewSideTimeRemaining : Html Msg
@@ -1868,7 +1868,7 @@ viewSidesWithEndScores model data game sides =
             in
             div
                 []
-                [ div [ class "d-flex", style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.rockColor) ]
+                [ div [ class "d-flex", style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.position) ]
                     [ h5 [ class "mr-2" ] [ text side.teamName ]
                     , h5 [] [ text scoreForDisplay ]
                     ]
@@ -1888,16 +1888,11 @@ viewSidesWithEndScores model data game sides =
                 ( top, bot ) =
                     sides
             in
-            case List.head data.settings.rockColors of
-                Just rockColor ->
-                    if top.rockColor == rockColor.key then
-                        sides
+            if top.position > 0 then
+                ( bot, top )
 
-                    else
-                        ( bot, top )
-
-                Nothing ->
-                    ( bot, top )
+            else
+                sides
 
         sidesOrderedForShots =
             -- If shot by shot is enabled, the side with the hammer should always show up last (on the right).
@@ -1913,7 +1908,7 @@ viewSidesWithEndScores model data game sides =
                     sides
 
             else
-                sides
+                sidesOrderedForEnds
     in
     div
         [ class "col-12 col-xl-10" ]
