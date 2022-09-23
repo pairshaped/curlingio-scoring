@@ -2,7 +2,7 @@ module Scoring exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, select, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, classList, disabled, href, id, placeholder, selected, style, tabindex, title, type_, value)
+import Html.Attributes exposing (class, classList, disabled, href, id, placeholder, property, selected, style, tabindex, title, type_, value)
 import Html.Events exposing (onBlur, onClick, onFocus, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
@@ -700,7 +700,10 @@ shotNumberToCurlerIndex shotNumber =
 
 withInitializedShots : Bool -> ( Side, Side ) -> ( Side, Side )
 withInitializedShots shotByShotEnabled ( top, bot ) =
-    if shotByShotEnabled then
+    if not shotByShotEnabled then
+        ( top, bot )
+
+    else
         let
             updatedSide : Side -> Side
             updatedSide side =
@@ -752,8 +755,10 @@ withInitializedShots shotByShotEnabled ( top, bot ) =
         in
         ( updatedSide top, updatedSide bot )
 
-    else
-        ( top, bot )
+
+run : msg -> Cmd msg
+run m =
+    Task.perform (always m) (Task.succeed ())
 
 
 
@@ -761,7 +766,8 @@ withInitializedShots shotByShotEnabled ( top, bot ) =
 
 
 type Msg
-    = GotData (WebData Data)
+    = ForcedTick Time.Posix
+    | GotData (WebData Data)
     | ReloadData
     | ToggleFullScreen
     | SelectGame Game
@@ -787,6 +793,10 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ForcedTick t ->
+            -- This will clear the save message in our view.
+            ( model, Cmd.none )
+
         GotData response ->
             ( { model | data = response }, Cmd.none )
 
@@ -1167,14 +1177,24 @@ update msg model =
         UpdateFocusedEndNumber endNumber ->
             let
                 updatedGame game =
+                    { game | focusedEndNumber = endNumber }
+
+                -- For some reason, in order to reflect which curler is selected in shots data we need to force a second render on end number focus change.
+                forcedTickToUpdateShots =
                     case model.data of
                         Success data ->
-                            { game | focusedEndNumber = endNumber }
+                            if data.settings.shotByShotEnabled then
+                                Task.perform ForcedTick (Process.sleep 20 |> Task.andThen (\_ -> Time.now))
+
+                            else
+                                Cmd.none
 
                         _ ->
-                            game
+                            Cmd.none
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            , forcedTickToUpdateShots
+            )
 
         UpdateShotCurlerId forSide forShot val ->
             let
@@ -1945,14 +1965,19 @@ viewShots side focusedEndNumber =
         viewShot : Shot -> Html Msg
         viewShot shot =
             let
-                viewCurlerOptions =
+                viewCurlerOptions selectedCurlerId =
                     let
                         viewCurlerOption curlerIndex teamCurler =
                             let
                                 isSelected =
-                                    shotNumberToCurlerIndex shot.shotNumber == curlerIndex
+                                    selectedCurlerId == teamCurler.curlerId
                             in
-                            option [ selected isSelected, value (String.fromInt teamCurler.curlerId) ] [ text teamCurler.name ]
+                            -- For some reason, in order to reflect which curler is selected in shots data we need to force a second render on end number focus change.
+                            option
+                                [ selected isSelected
+                                , value (String.fromInt teamCurler.curlerId)
+                                ]
+                                [ text teamCurler.name ]
                     in
                     side.teamCurlers
                         |> List.indexedMap viewCurlerOption
@@ -1961,10 +1986,9 @@ viewShots side focusedEndNumber =
                 [ td []
                     [ select
                         [ class "shot-curler mr-1 form-control"
-                        , value (String.fromInt (Maybe.withDefault -1 shot.curlerId))
                         , onInput (UpdateShotCurlerId side shot)
                         ]
-                        viewCurlerOptions
+                        (viewCurlerOptions (Maybe.withDefault -1 shot.curlerId))
                     ]
                 , td []
                     [ input
