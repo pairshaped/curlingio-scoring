@@ -121,8 +121,9 @@ type ThrowType
 
 
 type alias RockColor =
-    { key : String
-    , value : String
+    { pos : Int
+    , key : String
+    , val : String
     }
 
 
@@ -170,8 +171,9 @@ decodeDraw =
 decodeRockColor : Decoder RockColor
 decodeRockColor =
     Decode.succeed RockColor
+        |> required "pos" int
         |> required "key" string
-        |> required "value" string
+        |> required "val" string
 
 
 decodeGameState : Decoder GameState
@@ -527,7 +529,7 @@ rockColorForLabel rockColors key =
 rockColorValueForLabel : List RockColor -> String -> String
 rockColorValueForLabel rockColors key =
     rockColorForLabel rockColors key
-        |> Maybe.map (\rc -> rc.value)
+        |> Maybe.map (\rc -> rc.val)
         |> Maybe.withDefault ""
 
 
@@ -782,7 +784,7 @@ type Msg
     | UpdateSideScore Side String
     | UpdateSideTimeRemaining Side String
     | UpdateSideResult Side SideResult
-    | UpdateSideEndScore Int Int String
+    | UpdateSideEndScore Side Int String
     | UpdateFocusedEndNumber Int
     | UpdateShotCurlerId Side Shot String
     | UpdateShotTurn Side Shot String
@@ -956,7 +958,17 @@ update msg model =
                         { side | rockColor = newColor.key }
 
                     else
-                        side
+                        case model.data of
+                            Success data ->
+                                case List.Extra.find (\c -> c.key /= newColor.key) data.settings.rockColors of
+                                    Just color ->
+                                        { side | rockColor = color.key }
+
+                                    Nothing ->
+                                        side
+
+                            _ ->
+                                side
 
                 updatedGame game =
                     case game.sides of
@@ -1104,7 +1116,7 @@ update msg model =
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
 
-        UpdateSideEndScore sideIndex endIndex newScoreStr ->
+        UpdateSideEndScore onSide endIndex newScoreStr ->
             let
                 newScoreStrFixed =
                     if String.length newScoreStr > 1 then
@@ -1136,8 +1148,8 @@ update msg model =
                                 |> Just
                     }
 
-                updatedSide idx side =
-                    if idx == sideIndex then
+                updatedSide side =
+                    if side.id == onSide.id then
                         { side | endScores = List.Extra.setAt endIndex newScore side.endScores }
                             |> updatedScore
 
@@ -1158,7 +1170,7 @@ update msg model =
                                     { game
                                         | sides =
                                             Just
-                                                (( updatedSide 0 (Tuple.first sides), updatedSide 1 (Tuple.second sides) )
+                                                (( updatedSide (Tuple.first sides), updatedSide (Tuple.second sides) )
                                                     |> correctEnds data.settings
                                                 )
                                         , changed = True
@@ -1751,7 +1763,7 @@ viewSidesWithEndScores model data game sides =
                                     Nothing ->
                                         ""
                                 )
-                            , onInput (UpdateSideEndScore sideIndex (endNumber - 1))
+                            , onInput (UpdateSideEndScore side (endNumber - 1))
                             , onFocus (UpdateFocusedEndNumber endNumber)
                             ]
                             []
@@ -1789,7 +1801,7 @@ viewSidesWithEndScores model data game sides =
                                     [ ( "color-btn", True )
                                     , ( "active", side.rockColor == rockColor.key )
                                     ]
-                                , style "background-color" rockColor.value
+                                , style "background-color" rockColor.val
                                 ]
                                 [ text "" ]
                     in
@@ -1870,7 +1882,24 @@ viewSidesWithEndScores model data game sides =
                 , viewSideTimeRemaining
                 ]
 
-        sidesOrdered =
+        sidesOrderedForEnds =
+            -- Order sides by their rock color for the end scores (top / bottom)
+            let
+                ( top, bot ) =
+                    sides
+            in
+            case List.head data.settings.rockColors of
+                Just rockColor ->
+                    if top.rockColor == rockColor.key then
+                        sides
+
+                    else
+                        ( bot, top )
+
+                Nothing ->
+                    ( bot, top )
+
+        sidesOrderedForShots =
             -- If shot by shot is enabled, the side with the hammer should always show up last (on the right).
             if data.settings.shotByShotEnabled then
                 let
@@ -1918,15 +1947,15 @@ viewSidesWithEndScores model data game sides =
                                 :: List.map viewEndHeader (List.range 1 numberOfEnds)
                                 ++ [ th [ style "width" "50px" ] [ text "Total" ] ]
                             )
-                            :: [ viewSideEnds 0 (Tuple.first sides)
-                               , viewSideEnds 1 (Tuple.second sides)
+                            :: [ viewSideEnds 0 (Tuple.first sidesOrderedForEnds)
+                               , viewSideEnds 1 (Tuple.second sidesOrderedForEnds)
                                ]
                         )
                     ]
                 , hr [] []
                 , div [ class "d-flex justify-content-between" ]
-                    [ viewSideOther (Tuple.first sidesOrdered)
-                    , viewSideOther (Tuple.second sidesOrdered)
+                    [ viewSideOther (Tuple.first sidesOrderedForShots)
+                    , viewSideOther (Tuple.second sidesOrderedForShots)
                     ]
                 ]
             , div
