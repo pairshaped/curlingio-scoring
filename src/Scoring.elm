@@ -2002,19 +2002,14 @@ viewShots sideIndex side focusedEndNumber =
                             -- If we're on the second end, that's (2 * 2) = 4
                             -- etc.
                             shot.endNumber * 2
-
-                        tabsUsedBySide =
-                            -- Always 8 rows, with 4 fields each, even in doubles?
-                            8 * 4
-
-                        tabsForSideNumber =
-                            -- sideNumber needs to be 1 based.
-                            -- Count the end score tabs
-                            -- Then add the side tabs depending on which side (left = 0, right = 1)
-                            tabsUsedByEndScores
-                                + (sideIndex * tabsUsedBySide)
                     in
-                    tabsForSideNumber + ((shot.shotNumber - 1) * 4) + 1
+                    tabsUsedByEndScores
+                        -- Each row
+                        + ((shot.shotNumber - 1) * 8)
+                        -- Which side
+                        + (sideIndex * 4)
+                        -- 1 based instead of 0 based
+                        + 1
 
                 viewCurlerOptions selectedCurlerId =
                     let
