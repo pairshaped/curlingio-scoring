@@ -48,7 +48,7 @@ Deploy is simply pushing the updated prod.js and prod.min.js in master up to git
 ## Copyright and License
 
 Curling I/O Scoring
-Copyright (C) 2019 Curling I/O
+Copyright (C) 2022 Curling I/O
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -33,6 +33,7 @@ type alias Model =
 
 type alias Flags =
     { baseUrl : String
+    , demoMode : Bool
     }
 
 
@@ -412,7 +413,7 @@ encodeSideResult sideResult =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( Model flags NotAsked NotAsked NotAsked False
-    , getData flags.baseUrl
+    , getData flags.demoMode flags.baseUrl
     )
 
 
@@ -435,11 +436,15 @@ errorMessage error =
             "Bad body response from server. Please contact Curling I/O support if the issue persists for more than a few minutes. Details: \"" ++ string ++ "\""
 
 
-getData : String -> Cmd Msg
-getData baseUrl =
+getData : Bool -> String -> Cmd Msg
+getData demoMode baseUrl =
     let
         url =
-            baseUrl ++ "/games"
+            if demoMode then
+                baseUrl ++ "/db"
+
+            else
+                baseUrl ++ "/games"
     in
     RemoteData.Http.get url GotData decodeData
 
@@ -809,7 +814,7 @@ update msg model =
                 , selectedGame = NotAsked
               }
             , Cmd.batch
-                [ getData model.flags.baseUrl
+                [ getData model.flags.demoMode model.flags.baseUrl
                 ]
             )
 
