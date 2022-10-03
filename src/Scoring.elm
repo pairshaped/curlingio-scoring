@@ -1725,7 +1725,12 @@ viewSidesWithEndScores model data game sides =
                 viewEndForSide endNumber =
                     let
                         onTabIndex =
-                            ((sideIndex + endNumber) * 2) - sideIndex - 1
+                            -- If shto by shot is enabled, ends past the currently focused end will need to account for all of the shot by shot tabs (16 * 4)
+                            if data.settings.shotByShotEnabled && game.focusedEndNumber < endNumber then
+                                ((sideIndex + endNumber) * 2) - sideIndex - 1 + (16 * 4)
+
+                            else
+                                ((sideIndex + endNumber) * 2) - sideIndex - 1
 
                         hasHammer =
                             Maybe.withDefault False (hasHammerInEnd side sides (endNumber - 1))
@@ -1777,8 +1782,8 @@ viewSidesWithEndScores model data game sides =
                     ++ [ th [ class "text-center px-2", style "padding-top" "12px" ] [ text (String.fromInt (Maybe.withDefault 0 side.score)) ] ]
                 )
 
-        viewSideOther : Side -> Html Msg
-        viewSideOther side =
+        viewSideOther : Int -> Side -> Html Msg
+        viewSideOther sideIndex side =
             let
                 scoreForDisplay =
                     case side.score of
@@ -1873,7 +1878,7 @@ viewSidesWithEndScores model data game sides =
                     , h5 [] [ text scoreForDisplay ]
                     ]
                 , if data.settings.shotByShotEnabled then
-                    viewShots side game.focusedEndNumber
+                    viewShots sideIndex side game.focusedEndNumber
 
                   else
                     text ""
@@ -1949,8 +1954,8 @@ viewSidesWithEndScores model data game sides =
                     ]
                 , hr [] []
                 , div [ class "d-flex justify-content-between" ]
-                    [ viewSideOther (Tuple.first sidesOrderedForShots)
-                    , viewSideOther (Tuple.second sidesOrderedForShots)
+                    [ viewSideOther 0 (Tuple.first sidesOrderedForShots)
+                    , viewSideOther 1 (Tuple.second sidesOrderedForShots)
                     ]
                 ]
             , div
@@ -1983,12 +1988,34 @@ viewSidesWithEndScores model data game sides =
         ]
 
 
-viewShots : Side -> Int -> Html Msg
-viewShots side focusedEndNumber =
+viewShots : Int -> Side -> Int -> Html Msg
+viewShots sideIndex side focusedEndNumber =
     let
         viewShot : Shot -> Html Msg
         viewShot shot =
             let
+                startingTabIndex =
+                    let
+                        tabsUsedByEndScores =
+                            -- 2 tabs for each end.
+                            -- If we're on the first end, that's (1 * 2) = 0
+                            -- If we're on the second end, that's (2 * 2) = 4
+                            -- etc.
+                            shot.endNumber * 2
+
+                        tabsUsedBySide =
+                            -- Always 8 rows, with 4 fields each, even in doubles?
+                            8 * 4
+
+                        tabsForSideNumber =
+                            -- sideNumber needs to be 1 based.
+                            -- Count the end score tabs
+                            -- Then add the side tabs depending on which side (left = 0, right = 1)
+                            tabsUsedByEndScores
+                                + (sideIndex * tabsUsedBySide)
+                    in
+                    tabsForSideNumber + ((shot.shotNumber - 1) * 4) + 1
+
                 viewCurlerOptions selectedCurlerId =
                     let
                         viewCurlerOption curlerIndex teamCurler =
@@ -2011,6 +2038,7 @@ viewShots side focusedEndNumber =
                     [ select
                         [ class "shot-curler mr-1 form-control"
                         , onInput (UpdateShotCurlerId side shot)
+                        , tabindex startingTabIndex
                         ]
                         (viewCurlerOptions (Maybe.withDefault -1 shot.curlerId))
                     ]
@@ -2019,6 +2047,7 @@ viewShots side focusedEndNumber =
                         [ class "shot-turn mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.turn)
                         , onInput (UpdateShotTurn side shot)
+                        , tabindex (startingTabIndex + 1)
                         ]
                         []
                     ]
@@ -2027,6 +2056,7 @@ viewShots side focusedEndNumber =
                         [ class "shot-throw mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.throw)
                         , onInput (UpdateShotThrow side shot)
+                        , tabindex (startingTabIndex + 2)
                         ]
                         []
                     ]
@@ -2035,6 +2065,7 @@ viewShots side focusedEndNumber =
                         [ class "shot-rating mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.rating)
                         , onInput (UpdateShotRating side shot)
+                        , tabindex (startingTabIndex + 3)
                         ]
                         []
                     ]
