@@ -10,10 +10,10 @@
     "current_draw_id": 1,
     "end_scores_enabled": true,
     "number_of_ends": 10,
-    "shot_by_shot_enabled": false,
+    "shot_by_shot_enabled": true,
     "rock_colors": [
       {
-        "pos": 1,
+        "pos": 0,
         "key": "red",
         "val": "#dd0000"
       },
@@ -59,7 +59,12 @@
             null,
             null
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Homer" },
+            { "curler_id": 2, "name": "Marge" },
+            { "curler_id": 3, "name": "Apu" },
+            { "curler_id": 4, "name": "Chief" }
+          ],
           "shots": null
         },
         {
@@ -82,7 +87,12 @@
             null,
             null
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Bart" },
+            { "curler_id": 2, "name": "Lisa" },
+            { "curler_id": 3, "name": "Maggie" },
+            { "curler_id": 4, "name": "Ralph" }
+          ],
           "shots": null
         }
       ]
@@ -113,7 +123,12 @@
             null,
             null
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Moe" },
+            { "curler_id": 2, "name": "Barney" },
+            { "curler_id": 3, "name": "Edna" },
+            { "curler_id": 4, "name": "Millhouse" }
+          ],
           "shots": null
         },
         {
@@ -135,7 +150,12 @@
             null,
             null
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Nelson" },
+            { "curler_id": 2, "name": "Krusty" },
+            { "curler_id": 3, "name": "Ned" },
+            { "curler_id": 4, "name": "Bob" }
+          ],
           "shots": null
         }
       ]
@@ -166,7 +186,12 @@
             1,
             0
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Burns" },
+            { "curler_id": 2, "name": "Skinner" },
+            { "curler_id": 3, "name": "Quimby" },
+            { "curler_id": 4, "name": "Smithers" }
+          ],
           "shots": null
         },
         {
@@ -188,7 +213,12 @@
             0,
             1
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Lovejoy" },
+            { "curler_id": 2, "name": "Hoover" },
+            { "curler_id": 3, "name": "Sideshow" },
+            { "curler_id": 4, "name": "Chalmers" }
+          ],
           "shots": null
         }
       ]
@@ -219,7 +249,12 @@
             2,
             0
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Lenny" },
+            { "curler_id": 2, "name": "Carl" },
+            { "curler_id": 3, "name": "Troy" },
+            { "curler_id": 4, "name": "Willie" }
+          ],
           "shots": null
         },
         {
@@ -241,7 +276,12 @@
             0,
             1
           ],
-          "team_curlers": [],
+          "team_curlers": [
+            { "curler_id": 1, "name": "Selma" },
+            { "curler_id": 2, "name": "Patty" },
+            { "curler_id": 3, "name": "Hibbert" },
+            { "curler_id": 4, "name": "Brockman" }
+          ],
           "shots": null
         }
       ]

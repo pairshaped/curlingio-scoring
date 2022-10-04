@@ -28,12 +28,12 @@ type alias Model =
     , savedGame : WebData Game
     , selectedGame : WebData Game
     , fullScreen : Bool
+    , localMode : Bool
     }
 
 
 type alias Flags =
     { baseUrl : String
-    , demoMode : Bool
     }
 
 
@@ -139,6 +139,11 @@ type SideResult
 
 
 -- DECODERS
+
+
+isLocalMode : String -> Bool
+isLocalMode url =
+    String.contains "localhost" url
 
 
 decodeData : Decoder Data
@@ -412,8 +417,12 @@ encodeSideResult sideResult =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags NotAsked NotAsked NotAsked False
-    , getData flags.demoMode flags.baseUrl
+    let
+        localMode =
+            isLocalMode flags.baseUrl
+    in
+    ( Model flags NotAsked NotAsked NotAsked False localMode
+    , getData localMode flags.baseUrl
     )
 
 
@@ -437,10 +446,10 @@ errorMessage error =
 
 
 getData : Bool -> String -> Cmd Msg
-getData demoMode baseUrl =
+getData localMode baseUrl =
     let
         url =
-            if demoMode then
+            if localMode then
                 baseUrl ++ "/db"
 
             else
@@ -814,7 +823,7 @@ update msg model =
                 , selectedGame = NotAsked
               }
             , Cmd.batch
-                [ getData model.flags.demoMode model.flags.baseUrl
+                [ getData model.localMode model.flags.baseUrl
                 ]
             )
 
