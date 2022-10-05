@@ -1727,8 +1727,8 @@ viewSidesWithEndScores model data game sides =
                 [ classList
                     [ ( "text-center", True )
                     , ( "font-weight-bold", endNumber == game.focusedEndNumber )
-                    , ( "text-primary", endNumber == game.focusedEndNumber )
                     ]
+                , style "color" "#007bff"
                 ]
                 [ text (String.fromInt endNumber) ]
 
