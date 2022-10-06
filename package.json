@@ -5,7 +5,7 @@
     "server": "json-server -w db.json -d 50"
   },
   "dependencies": {
-    "elm": "^0.19.1-no-deps",
+    "elm": "^0.19.1-5",
     "elm-live": "github:wking-io/elm-live#e317b4914c471addea7243c47f28dcebe27a5d36",
     "foreman": "^3.0.1",
     "json-server": "^0.17.0",
