@@ -351,42 +351,52 @@ encodeSide side =
 
 encodeShot : Shot -> Encode.Value
 encodeShot shot =
-    Encode.object
-        [ ( "end_number", Encode.int shot.endNumber )
-        , ( "shot_number", Encode.int shot.shotNumber )
-        , ( "curler_id"
-          , case shot.curlerId of
-                Just curlerId ->
-                    Encode.int curlerId
+    if shot.turn == Nothing && shot.throw == Nothing && shot.rating == Nothing then
+        -- Shots are stored as JSON in the database, so null values are unecessary (the entire field is overwritten on save).
+        -- Therefore, we can save a ton of bandwidth for the public widgets by not saving shots where nothing has been recorded.
+        -- The shot data will gradually increase as more games complete, but we'll never store shots for forfeits and conceits beyond the ends that were played.
+        Encode.null
 
-                Nothing ->
-                    Encode.null
-          )
-        , ( "turn"
-          , case shot.turn of
-                Just turn ->
-                    Encode.string turn
+    else
+        Encode.object
+            ([ ( "end_number", Encode.int shot.endNumber )
+             , ( "shot_number", Encode.int shot.shotNumber )
+             , ( "curler_id"
+               , case shot.curlerId of
+                    Just curlerId ->
+                        Encode.int curlerId
 
-                Nothing ->
-                    Encode.null
-          )
-        , ( "throw"
-          , case shot.throw of
-                Just throw ->
-                    Encode.string throw
+                    Nothing ->
+                        Encode.null
+               )
+             , ( "turn"
+               , case shot.turn of
+                    Just turn ->
+                        Encode.string turn
 
-                Nothing ->
-                    Encode.null
-          )
-        , ( "rating"
-          , case shot.rating of
-                Just rating ->
-                    Encode.string rating
+                    Nothing ->
+                        Encode.null
+               )
+             , ( "throw"
+               , case shot.throw of
+                    Just throw ->
+                        Encode.string throw
 
-                Nothing ->
-                    Encode.null
-          )
-        ]
+                    Nothing ->
+                        Encode.null
+               )
+             , ( "rating"
+               , case shot.rating of
+                    Just rating ->
+                        Encode.string rating
+
+                    Nothing ->
+                        Encode.null
+               )
+             ]
+                -- Filter out nulls since we're overwriting the entire shot json payload, there's no need to store nulls.
+                |> List.filter (\f -> Tuple.second f /= Encode.null)
+            )
 
 
 encodeSideResult : SideResult -> Encode.Value
