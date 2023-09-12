@@ -1597,17 +1597,21 @@ viewSelectedGame model data game =
         ]
 
 
-viewGameSaveMessage : Model -> Html Msg
-viewGameSaveMessage model =
-    case model.savedGame of
-        Success _ ->
-            div [ class "alert alert-success" ] [ text "Game saved." ]
+viewGameMessage : Model -> Game -> Html Msg
+viewGameMessage model game =
+    if game.changed then
+        div [ class "alert alert-warning" ] [ text "There are unsaved changes" ]
 
-        Failure error ->
-            div [ class "alert alert-danger" ] [ text (errorMessage error) ]
+    else
+        case model.savedGame of
+            Success _ ->
+                div [ class "alert alert-success" ] [ text "Game saved." ]
 
-        _ ->
-            text ""
+            Failure error ->
+                div [ class "alert alert-danger" ] [ text (errorMessage error) ]
+
+            _ ->
+                text ""
 
 
 viewSides : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
@@ -1694,7 +1698,7 @@ viewSides model data game sides =
                             )
                         ]
                     , hr [] []
-                    , viewGameSaveMessage model
+                    , viewGameMessage model game
                     ]
                     [ viewSide (Tuple.first sides)
                     , viewSide (Tuple.second sides)
@@ -1962,7 +1966,7 @@ viewSidesWithEndScores model data game sides =
                                 )
                             ]
                         ]
-                    , viewGameSaveMessage model
+                    , viewGameMessage model game
                     ]
                 , div [ class "table-responsive" ]
                     [ table [ class "table table-sm table-bordered" ]
@@ -1984,26 +1988,29 @@ viewSidesWithEndScores model data game sides =
                 ]
             , div
                 [ class "d-flex justify-content-between card-footer" ]
-                [ div []
-                    [ button
-                        [ class "btn btn-secondary mr-2"
-                        , disabled (model.savedGame == Loading)
-                        , title "Abandons any changes you've made and takes you back to the draw schedule."
-                        , onClick CloseGame
-                        ]
-                        [ text "Cancel" ]
-                    , button
-                        [ class "btn btn-info mr-2"
-                        , disabled (model.savedGame == Loading)
-                        , onClick ReloadGame
-                        , title "Abandons any changes you've made and reloads the game from the server."
-                        ]
-                        [ text "Reload" ]
+                [ button
+                    [ class "btn btn-secondary mr-2"
+                    , disabled (game.changed || model.savedGame == Loading)
+                    , title
+                        (if game.changed then
+                            "There are unsaved changes."
+
+                         else
+                            "Takes you back to the draw schedule."
+                        )
+                    , onClick CloseGame
                     ]
+                    [ text "Back" ]
                 , button
                     [ class "btn btn-primary"
                     , disabled (not game.changed || model.savedGame == Loading)
-                    , title "Saves all changes you've made since opening the game."
+                    , title
+                        (if game.changed then
+                            "Saves changes made since opening the game."
+
+                         else
+                            "No changes have been made."
+                        )
                     , onClick SaveGame
                     ]
                     [ text "Save" ]
