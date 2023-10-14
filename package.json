@@ -4,11 +4,10 @@
     "client": "elm-live src/Scoring.elm --start-page=dev.html --open -- --output=dev.js --debug",
     "server": "json-server -w db.json -d 50"
   },
-  "dependencies": {
+  "devDependencies": {
     "elm": "^0.19.1-5",
-    "elm-live": "github:wking-io/elm-live#e317b4914c471addea7243c47f28dcebe27a5d36",
+    "elm-live": "^4.0.2",
     "foreman": "^3.0.1",
-    "json-server": "^0.17.0",
-    "uglify-js": "^3.15.5"
+    "json-server": "^0.17.0"
   }
 }

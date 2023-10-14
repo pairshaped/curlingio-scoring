@@ -19,28 +19,36 @@
 
 * Shot by shot (enabled via league / competition settings)
 
-## Installing Dependencies
+## For Contributors
+
+### Installing Dependencies
+
+We use elm and elm-live for development. You can install these via npm.
 
 ```
-yarn
+npm install
 ```
 
-## Running It
+### Running It
+
+Edit dev.html and configure the application's parameters for your environment. Then run it:
 
 ```
-yarn start
+npm start
 ```
 
-## Production Deployment
+### Production Deployment
 
-Compile for production by optimizing and minimizing using:
+Make sure you have uglify-js installed to compress the production js.
+```
+npm install -g uglify-js
+```
+
+Compile and optimize for production using:
 
 ```
 ./prod.sh
 ```
-
-Deploy is simply pushing the updated prod.js and prod.min.js in master up to github.
-
 
 ## Source
 <https://github.com/pairshaped/curlingio-scoring>
