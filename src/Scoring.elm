@@ -110,17 +110,6 @@ type alias TeamCurler =
     }
 
 
-type TurnType
-    = Inturn
-    | Outturn
-
-
-type ThrowType
-    = Esomthing
-    | Fsomething
-    | Hsomething
-
-
 type alias RockColor =
     { pos : Int
     , key : String
@@ -135,6 +124,22 @@ type SideResult
     | Forfeited
     | Tied
     | NoResult
+
+
+
+-- Define acceptable (valid) values for turns, throws, and ratings.
+
+
+validShotTurns =
+    [ "I", "O", "X" ]
+
+
+validShotThrows =
+    [ "A", "B", "C", "D", "E", "F", "G", "H", "J", "X" ]
+
+
+validShotRatings =
+    [ "0", "1", "2", "3", "4", "V", "X" ]
 
 
 
@@ -1267,11 +1272,8 @@ update msg model =
                             formattedVal =
                                 String.toUpper val
 
-                            valids =
-                                [ "I", "O", "X" ]
-
                             validated =
-                                if List.member formattedVal valids then
+                                if List.member formattedVal validShotTurns then
                                     Just formattedVal
 
                                 else
@@ -1317,11 +1319,8 @@ update msg model =
                             formattedVal =
                                 String.toUpper val
 
-                            valids =
-                                [ "A", "B", "C", "D", "E", "F", "G", "H", "J", "X" ]
-
                             validated =
-                                if List.member formattedVal valids then
+                                if List.member formattedVal validShotThrows then
                                     Just formattedVal
 
                                 else
@@ -1368,11 +1367,8 @@ update msg model =
                             formattedVal =
                                 String.toUpper val
 
-                            valids =
-                                [ "0", "1", "2", "3", "4", "V", "X" ]
-
                             validated =
-                                if List.member formattedVal valids then
+                                if List.member formattedVal validShotRatings then
                                     Just formattedVal
 
                                 else
