@@ -441,6 +441,12 @@ init flags =
     )
 
 
+sendMsg : msg -> Cmd msg
+sendMsg msg =
+    Task.succeed msg
+        |> Task.perform identity
+
+
 errorMessage : Http.Error -> String
 errorMessage error =
     case error of
@@ -945,7 +951,16 @@ update msg model =
                 , savedGame = response
                 , data = RemoteData.map updatedData model.data
               }
-            , Cmd.none
+            , case model.data of
+                Success data ->
+                    if data.settings.endScoresEnabled then
+                        Cmd.none
+
+                    else
+                        sendMsg CloseGame
+
+                _ ->
+                    Cmd.none
             )
 
         ResetSavedGameMessage t ->
@@ -1596,7 +1611,16 @@ viewSelectedGame model data game =
 viewGameMessage : Model -> Game -> Html Msg
 viewGameMessage model game =
     if game.changed then
-        div [ class "alert alert-warning" ] [ text "There are unsaved changes" ]
+        case model.data of
+            Success data ->
+                if data.settings.endScoresEnabled then
+                    div [ class "alert alert-warning" ] [ text "There are unsaved changes" ]
+
+                else
+                    text ""
+
+            _ ->
+                text ""
 
     else
         case model.savedGame of
