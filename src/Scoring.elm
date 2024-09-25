@@ -803,7 +803,8 @@ run m =
 
 
 type Msg
-    = ForcedTick Time.Posix
+    = NoOp
+    | ForcedTick Time.Posix
     | GotData (WebData Data)
     | ReloadData
     | ToggleFullScreen
@@ -830,6 +831,9 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
         ForcedTick t ->
             -- This will clear the save message in our view.
             ( model, Cmd.none )
@@ -1926,7 +1930,7 @@ viewSidesWithEndScores model data game sides =
                     , h5 [] [ text scoreForDisplay ]
                     ]
                 , if data.settings.shotByShotEnabled then
-                    viewShots sideIndex side game.focusedEndNumber
+                    viewShots sideIndex side game.focusedEndNumber game
 
                   else
                     text ""
@@ -2039,8 +2043,8 @@ viewSidesWithEndScores model data game sides =
         ]
 
 
-viewShots : Int -> Side -> Int -> Html Msg
-viewShots sideIndex side focusedEndNumber =
+viewShots : Int -> Side -> Int -> Game -> Html Msg
+viewShots sideIndex side focusedEndNumber game =
     let
         viewShot : Shot -> Html Msg
         viewShot shot =
@@ -2111,6 +2115,13 @@ viewShots sideIndex side focusedEndNumber =
                         [ class "shot-rating mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.rating)
                         , onInput (UpdateShotRating side shot)
+                        , onBlur
+                            (if game.changed then
+                                SaveGame
+
+                             else
+                                NoOp
+                            )
                         , tabindex (startingTabIndex + 3)
                         ]
                         []
