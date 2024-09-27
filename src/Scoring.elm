@@ -135,6 +135,15 @@ validShotTurns =
 
 
 validShotThrows =
+    -- A = Takeout
+    -- B = Hit and Roll
+    -- C = Clear Front
+    -- D = Raise Takeout
+    -- E = Draw / Raise
+    -- F = Front Stone
+    -- G = Guard
+    -- H = Freeze
+    -- J = Tap Back
     [ "A", "B", "C", "D", "E", "F", "G", "H", "J", "X" ]
 
 
@@ -1165,19 +1174,27 @@ update msg model =
                         newScoreStr
 
                 newScore =
-                    case String.toInt newScoreStrFixed of
-                        Just s ->
-                            if s < 0 then
-                                Just 0
+                    case newScoreStrFixed of
+                        "X" ->
+                            Nothing
 
-                            else if s > 8 then
-                                Just 8
+                        "x" ->
+                            Nothing
 
-                            else
-                                Just s
+                        _ ->
+                            case String.toInt newScoreStrFixed of
+                                Just s ->
+                                    if s < 0 then
+                                        Nothing
 
-                        Nothing ->
-                            Just 0
+                                    else if s > 8 then
+                                        Just 8
+
+                                    else
+                                        Just s
+
+                                Nothing ->
+                                    Nothing
 
                 updatedScore side =
                     { side
