@@ -2077,9 +2077,9 @@ viewShots sideIndex side focusedEndNumber game =
                     in
                     tabsUsedByEndScores
                         -- Each row
-                        + ((shot.shotNumber - 1) * 8)
+                        + ((shot.shotNumber - 1) * 6)
                         -- Which side
-                        + (sideIndex * 4)
+                        + (sideIndex * 3)
                         -- 1 based instead of 0 based
                         + 1
 
@@ -2105,7 +2105,7 @@ viewShots sideIndex side focusedEndNumber game =
                     [ select
                         [ class "shot-curler mr-1 form-control"
                         , onInput (UpdateShotCurlerId side shot)
-                        , tabindex startingTabIndex
+                        , tabindex (startingTabIndex + 9000)
                         ]
                         (viewCurlerOptions (Maybe.withDefault -1 shot.curlerId))
                     ]
@@ -2114,7 +2114,7 @@ viewShots sideIndex side focusedEndNumber game =
                         [ class "shot-turn mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.turn)
                         , onInput (UpdateShotTurn side shot)
-                        , tabindex (startingTabIndex + 1)
+                        , tabindex startingTabIndex
                         ]
                         []
                     ]
@@ -2123,7 +2123,7 @@ viewShots sideIndex side focusedEndNumber game =
                         [ class "shot-throw mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.throw)
                         , onInput (UpdateShotThrow side shot)
-                        , tabindex (startingTabIndex + 2)
+                        , tabindex (startingTabIndex + 1)
                         ]
                         []
                     ]
@@ -2139,7 +2139,7 @@ viewShots sideIndex side focusedEndNumber game =
                              else
                                 NoOp
                             )
-                        , tabindex (startingTabIndex + 3)
+                        , tabindex (startingTabIndex + 2)
                         ]
                         []
                     ]
