@@ -48,10 +48,11 @@ type alias Settings =
     { eventName : String
     , sheets : List String
     , currentDrawId : Int
+    , rockColors : List RockColor
     , endScoresEnabled : Bool
     , numberOfEnds : Int
     , shotByShotEnabled : Bool
-    , rockColors : List RockColor
+    , lsdEnabled : Bool
     }
 
 
@@ -86,6 +87,7 @@ type alias Side =
     , teamName : String
     , firstHammer : Bool
     , timeRemaining : Maybe String
+    , lsd : Maybe String
     , score : Maybe Int
     , result : SideResult
     , endScores : List (Maybe Int)
@@ -174,10 +176,11 @@ decodeSettings =
         |> required "event_name" string
         |> required "sheets" (list string)
         |> required "current_draw_id" int
-        |> required "end_scores_enabled" bool
-        |> optional "number_of_ends" int 10
-        |> required "shot_by_shot_enabled" bool
         |> required "rock_colors" (list decodeRockColor)
+        |> optional "end_scores_enabled" bool False
+        |> optional "number_of_ends" int 10
+        |> optional "shot_by_shot_enabled" bool False
+        |> optional "last_stone_draw_enabled" bool False
 
 
 decodeDraw : Decoder Draw
@@ -254,6 +257,7 @@ decodeSide =
         |> required "team_name" string
         |> required "first_hammer" bool
         |> optional "time_remaining" (nullable string) Nothing
+        |> optional "lsd" (nullable string) Nothing
         |> optional "score" (nullable int) Nothing
         |> optional "result" decodeSideResult NoResult
         |> optional "end_scores" (list (nullable int)) []
@@ -334,6 +338,14 @@ encodeSide side =
           , case side.timeRemaining of
                 Just timeRemaining ->
                     Encode.string timeRemaining
+
+                Nothing ->
+                    Encode.null
+          )
+        , ( "lsd"
+          , case side.lsd of
+                Just lsd ->
+                    Encode.string lsd
 
                 Nothing ->
                     Encode.null
@@ -828,6 +840,7 @@ type Msg
     | UpdateSidePosition Side Int
     | UpdateSideScore Side String
     | UpdateSideTimeRemaining Side String
+    | UpdateSideLsd Side String
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Side Int String
     | UpdateFocusedEndNumber Int
@@ -1090,6 +1103,62 @@ update msg model =
 
                         else
                             { side | timeRemaining = Nothing }
+
+                    else
+                        side
+
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            case game.sides of
+                                Just sides ->
+                                    { game
+                                        | sides =
+                                            Just
+                                                (Tuple.mapBoth updatedSide updatedSide sides
+                                                    |> correctEnds data.settings
+                                                )
+                                        , changed = True
+                                    }
+
+                                Nothing ->
+                                    game
+
+                        _ ->
+                            game
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateSideLsd onSide newLsd ->
+            let
+                updatedSide side =
+                    if side.id == onSide.id then
+                        let
+                            validDistance =
+                                if newLsd == "" then
+                                    False
+
+                                else
+                                    let
+                                        isFloat v =
+                                            case String.toFloat v of
+                                                Just v_ ->
+                                                    True
+
+                                                Nothing ->
+                                                    False
+                                    in
+                                    if isFloat newLsd then
+                                        True
+
+                                    else
+                                        False
+                        in
+                        if validDistance then
+                            { side | lsd = Just newLsd }
+
+                        else
+                            { side | lsd = Nothing }
 
                     else
                         side
@@ -1909,6 +1978,20 @@ viewSidesWithEndScores model data game sides =
                             []
                         ]
 
+                viewSideLsd : Html Msg
+                viewSideLsd =
+                    div [ class "d-flex mt-3 form-group" ]
+                        [ label [ class "label mr-2 mt-2" ] [ text "LSD:" ]
+                        , input
+                            [ class "form-control"
+                            , style "width" "100px"
+                            , value (Maybe.withDefault "" side.lsd)
+                            , placeholder "0.0"
+                            , onInput (UpdateSideLsd side)
+                            ]
+                            []
+                        ]
+
                 viewSideResult : Html Msg
                 viewSideResult =
                     let
@@ -1954,6 +2037,11 @@ viewSidesWithEndScores model data game sides =
                 , viewSideColor
                 , viewSideResult
                 , viewSideTimeRemaining
+                , if data.settings.lsdEnabled then
+                    viewSideLsd
+
+                  else
+                    text ""
                 ]
 
         sidesOrderedForEnds =
