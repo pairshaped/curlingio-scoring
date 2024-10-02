@@ -52,7 +52,7 @@ type alias Settings =
     , endScoresEnabled : Bool
     , numberOfEnds : Int
     , shotByShotEnabled : Bool
-    , lsdEnabled : Bool
+    , lastStoneDrawEnabled : Bool
     }
 
 
@@ -2002,7 +2002,7 @@ viewSidesWithEndScores model data game sides =
                 , viewSideResult
                 , div [ class "d-flex justify-content-between" ]
                     [ viewSideTimeRemaining
-                    , if data.settings.lsdEnabled then
+                    , if data.settings.lastStoneDrawEnabled then
                         viewSideLsd
 
                       else
