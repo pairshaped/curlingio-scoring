@@ -122,7 +122,6 @@ type alias RockColor =
 type SideResult
     = Won
     | Lost
-    | Conceded
     | Forfeited
     | Tied
     | NoResult
@@ -298,9 +297,6 @@ decodeSideResult =
                     "forfeited" ->
                         Decode.succeed Forfeited
 
-                    "conceded" ->
-                        Decode.succeed Conceded
-
                     "tied" ->
                         Decode.succeed Tied
 
@@ -385,7 +381,7 @@ encodeShot shot =
     if shot.turn == Nothing && shot.throw == Nothing && shot.rating == Nothing then
         -- Shots are stored as JSON in the database, so null values are unecessary (the entire field is overwritten on save).
         -- Therefore, we can save a ton of bandwidth for the public widgets by not saving shots where nothing has been recorded.
-        -- The shot data will gradually increase as more games complete, but we'll never store shots for forfeits and conceits beyond the ends that were played.
+        -- The shot data will gradually increase as more games complete, but we'll never store shots for forfeits beyond the ends that were played.
         Encode.null
 
     else
@@ -441,9 +437,6 @@ encodeSideResult sideResult =
 
         Forfeited ->
             Encode.string "forfeited"
-
-        Conceded ->
-            Encode.string "conceded"
 
         Tied ->
             Encode.string "tied"
@@ -547,9 +540,6 @@ sideResultForDisplay result =
         Lost ->
             "Lost"
 
-        Conceded ->
-            "Conceded"
-
         Forfeited ->
             "Forfeited"
 
@@ -567,9 +557,6 @@ sideResultColor result =
             "success"
 
         Lost ->
-            "danger"
-
-        Conceded ->
             "danger"
 
         Forfeited ->
@@ -1182,9 +1169,6 @@ update msg model =
                             Forfeited ->
                                 { side | result = Won }
 
-                            Conceded ->
-                                { side | result = Won }
-
                             Tied ->
                                 { side | result = Tied }
 
@@ -1753,7 +1737,7 @@ viewSides model data game sides =
                     in
                     div
                         [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                        (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
+                        (List.map viewResultButton [ Won, Lost, Forfeited, Tied, NoResult ])
             in
             p
                 []
@@ -1946,8 +1930,8 @@ viewSidesWithEndScores model data game sides =
 
                 viewSideTimeRemaining : Html Msg
                 viewSideTimeRemaining =
-                    div [ class "d-flex mt-3 form-group" ]
-                        [ label [ class "label mr-2 mt-2" ] [ text "Time Remaining:" ]
+                    div [ class "d-flex mt-3 form-group mr-3" ]
+                        [ label [ class "label mr-2 mt-2" ] [ text "Time Left:" ]
                         , input
                             [ class "form-control"
                             , style "width" "100px"
@@ -1964,7 +1948,7 @@ viewSidesWithEndScores model data game sides =
                         [ label [ class "label mr-2 mt-2" ] [ text "LSD:" ]
                         , input
                             [ class "form-control"
-                            , style "width" "100px"
+                            , style "width" "80px"
                             , value (Maybe.withDefault "" side.lsd)
                             , placeholder "0.0"
                             , onInput (UpdateSideLsd side)
@@ -1999,7 +1983,7 @@ viewSidesWithEndScores model data game sides =
                         , div [ class "d-flex " ]
                             [ div
                                 [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                                (List.map viewResultButton [ Won, Lost, Conceded, Forfeited, Tied, NoResult ])
+                                (List.map viewResultButton [ Won, Lost, Forfeited, Tied, NoResult ])
                             ]
                         ]
             in
