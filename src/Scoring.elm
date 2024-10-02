@@ -6,7 +6,7 @@ import Html.Attributes exposing (class, classList, disabled, href, id, placehold
 import Html.Events exposing (onBlur, onClick, onFocus, onInput)
 import Html.Events.Extra exposing (onClickPreventDefault)
 import Http
-import Json.Decode as Decode exposing (Decoder, array, bool, int, list, nullable, string)
+import Json.Decode as Decode exposing (Decoder, array, bool, float, int, list, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode
 import Json.Encode.Extra exposing (maybe)
@@ -345,7 +345,12 @@ encodeSide side =
         , ( "lsd"
           , case side.lsd of
                 Just lsd ->
-                    Encode.string lsd
+                    case String.toFloat lsd of
+                        Just lsd_ ->
+                            Encode.string lsd
+
+                        Nothing ->
+                            Encode.null
 
                 Nothing ->
                     Encode.null
@@ -1133,32 +1138,7 @@ update msg model =
             let
                 updatedSide side =
                     if side.id == onSide.id then
-                        let
-                            validDistance =
-                                if newLsd == "" then
-                                    False
-
-                                else
-                                    let
-                                        isFloat v =
-                                            case String.toFloat v of
-                                                Just v_ ->
-                                                    True
-
-                                                Nothing ->
-                                                    False
-                                    in
-                                    if isFloat newLsd then
-                                        True
-
-                                    else
-                                        False
-                        in
-                        if validDistance then
-                            { side | lsd = Just newLsd }
-
-                        else
-                            { side | lsd = Nothing }
+                        { side | lsd = Just newLsd }
 
                     else
                         side
@@ -2036,12 +2016,14 @@ viewSidesWithEndScores model data game sides =
                     text ""
                 , viewSideColor
                 , viewSideResult
-                , viewSideTimeRemaining
-                , if data.settings.lsdEnabled then
-                    viewSideLsd
+                , div [ class "d-flex justify-content-between" ]
+                    [ viewSideTimeRemaining
+                    , if data.settings.lsdEnabled then
+                        viewSideLsd
 
-                  else
-                    text ""
+                      else
+                        text ""
+                    ]
                 ]
 
         sidesOrderedForEnds =
