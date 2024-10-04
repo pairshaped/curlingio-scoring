@@ -88,6 +88,7 @@ type alias Side =
     , firstHammer : Bool
     , timeRemaining : Maybe String
     , lsd : Maybe String
+    , cumulativeLsd : Maybe String
     , score : Maybe Int
     , result : SideResult
     , endScores : List (Maybe Int)
@@ -258,6 +259,7 @@ decodeSide =
         |> required "first_hammer" bool
         |> optional "time_remaining" (nullable string) Nothing
         |> optional "lsd" (nullable string) Nothing
+        |> optional "cumulative_lsd" (nullable string) Nothing
         |> optional "score" (nullable int) Nothing
         |> optional "result" decodeSideResult NoResult
         |> optional "end_scores" (list (nullable int)) []
@@ -350,6 +352,19 @@ encodeSide side =
                     case String.toFloat lsd of
                         Just lsd_ ->
                             Encode.string lsd
+
+                        Nothing ->
+                            Encode.null
+
+                Nothing ->
+                    Encode.null
+          )
+        , ( "cumulative_lsd"
+          , case side.cumulativeLsd of
+                Just cumulativeLsd ->
+                    case String.toFloat cumulativeLsd of
+                        Just cumulativeLsd_ ->
+                            Encode.string cumulativeLsd
 
                         Nothing ->
                             Encode.null
@@ -839,6 +854,7 @@ type Msg
     | UpdateSideScore Side String
     | UpdateSideTimeRemaining Side String
     | UpdateSideLsd Side String
+    | UpdateSideCumulativeLsd Side String
     | UpdateSideResult Side SideResult
     | UpdateSideEndScore Side Int String
     | UpdateFocusedEndNumber Int
@@ -1132,6 +1148,37 @@ update msg model =
                 updatedSide side =
                     if side.id == onSide.id then
                         { side | lsd = Just newLsd }
+
+                    else
+                        side
+
+                updatedGame game =
+                    case model.data of
+                        Success data ->
+                            case game.sides of
+                                Just sides ->
+                                    { game
+                                        | sides =
+                                            Just
+                                                (Tuple.mapBoth updatedSide updatedSide sides
+                                                    |> correctEnds data.settings
+                                                )
+                                        , changed = True
+                                    }
+
+                                Nothing ->
+                                    game
+
+                        _ ->
+                            game
+            in
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+
+        UpdateSideCumulativeLsd onSide newCumulativeLsd ->
+            let
+                updatedSide side =
+                    if side.id == onSide.id then
+                        { side | cumulativeLsd = Just newCumulativeLsd }
 
                     else
                         side
@@ -1937,10 +1984,10 @@ viewSidesWithEndScores model data game sides =
                 viewSideTimeRemaining : Html Msg
                 viewSideTimeRemaining =
                     div [ class "d-flex mt-3 form-group mr-3" ]
-                        [ label [ class "label mr-2 mt-2" ] [ text "Time Left:" ]
+                        [ label [ class "label mr-2 mt-2" ] [ text "Time Remaining:" ]
                         , input
                             [ class "form-control"
-                            , style "width" "100px"
+                            , style "width" "80px"
                             , value (Maybe.withDefault "" side.timeRemaining)
                             , placeholder "MM:SS"
                             , onInput (UpdateSideTimeRemaining side)
@@ -1950,14 +1997,26 @@ viewSidesWithEndScores model data game sides =
 
                 viewSideLsd : Html Msg
                 viewSideLsd =
-                    div [ class "d-flex mt-3 form-group" ]
-                        [ label [ class "label mr-2 mt-2" ] [ text "LSD:" ]
+                    div [ class "d-flex form-group mr-3" ]
+                        [ label [ class "label mr-2 mt-2" ] [ text "Game LSD:" ]
                         , input
                             [ class "form-control"
-                            , style "width" "80px"
+                            , style "width" "70px"
                             , value (Maybe.withDefault "" side.lsd)
-                            , placeholder "0.0"
                             , onInput (UpdateSideLsd side)
+                            ]
+                            []
+                        ]
+
+                viewSideCumulativeLsd : Html Msg
+                viewSideCumulativeLsd =
+                    div [ class "d-flex form-group" ]
+                        [ label [ class "label mr-2 mt-2" ] [ text "Cumulative LSD:" ]
+                        , input
+                            [ class "form-control"
+                            , style "width" "70px"
+                            , value (Maybe.withDefault "" side.cumulativeLsd)
+                            , onInput (UpdateSideCumulativeLsd side)
                             ]
                             []
                         ]
@@ -2006,14 +2065,13 @@ viewSidesWithEndScores model data game sides =
                     text ""
                 , viewSideColor
                 , viewSideResult
-                , div [ class "d-flex justify-content-between" ]
-                    [ viewSideTimeRemaining
-                    , if data.settings.lastStoneDrawEnabled then
-                        viewSideLsd
+                , viewSideTimeRemaining
+                , if data.settings.lastStoneDrawEnabled then
+                    div [ class "d-flex mt-2" ]
+                        [ viewSideLsd, viewSideCumulativeLsd ]
 
-                      else
-                        text ""
-                    ]
+                  else
+                    text ""
                 ]
 
         sidesOrderedForEnds =
