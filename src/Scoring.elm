@@ -109,6 +109,7 @@ type alias Shot =
 type alias TeamCurler =
     { curlerId : Int
     , name : String
+    , delivery : Maybe String
     }
 
 
@@ -269,6 +270,7 @@ decodeTeamCurler =
     Decode.succeed TeamCurler
         |> required "curler_id" int
         |> required "name" string
+        |> optional "delivery" (nullable string) Nothing
 
 
 decodeShot : Decoder Shot
