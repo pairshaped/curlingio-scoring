@@ -2160,7 +2160,20 @@ viewShots sideIndex side focusedEndNumber game =
                     side.teamCurlers
                         |> List.indexedMap viewCurlerOption
             in
-            tr []
+            tr
+                [ class
+                    (case List.Extra.find (\tc -> Just tc.curlerId == shot.curlerId) side.teamCurlers of
+                        Just teamCurler ->
+                            if teamCurler.delivery == Just "left" then
+                                "border-left border-3 border-secondary"
+
+                            else
+                                ""
+
+                        Nothing ->
+                            ""
+                    )
+                ]
                 [ td []
                     [ select
                         [ class "shot-curler mr-1 form-control"
