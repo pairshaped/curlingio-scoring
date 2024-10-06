@@ -88,7 +88,7 @@ type alias Side =
     , firstHammer : Bool
     , timeRemaining : Maybe String
     , lsd : Maybe String
-    , cumulativeLsd : Maybe String
+    , lsdCumulative : Maybe String
     , score : Maybe Int
     , result : SideResult
     , endScores : List (Maybe Int)
@@ -259,7 +259,7 @@ decodeSide =
         |> required "first_hammer" bool
         |> optional "time_remaining" (nullable string) Nothing
         |> optional "lsd" (nullable string) Nothing
-        |> optional "cumulative_lsd" (nullable string) Nothing
+        |> optional "lsd_cumulative" (nullable string) Nothing
         |> optional "score" (nullable int) Nothing
         |> optional "result" decodeSideResult NoResult
         |> optional "end_scores" (list (nullable int)) []
@@ -359,12 +359,12 @@ encodeSide side =
                 Nothing ->
                     Encode.null
           )
-        , ( "cumulative_lsd"
-          , case side.cumulativeLsd of
-                Just cumulativeLsd ->
-                    case String.toFloat cumulativeLsd of
-                        Just cumulativeLsd_ ->
-                            Encode.string cumulativeLsd
+        , ( "lsd_cumulative"
+          , case side.lsdCumulative of
+                Just lsdCumulative ->
+                    case String.toFloat lsdCumulative of
+                        Just lsdCumulative_ ->
+                            Encode.string lsdCumulative
 
                         Nothing ->
                             Encode.null
@@ -1178,7 +1178,7 @@ update msg model =
             let
                 updatedSide side =
                     if side.id == onSide.id then
-                        { side | cumulativeLsd = Just newCumulativeLsd }
+                        { side | lsdCumulative = Just newCumulativeLsd }
 
                     else
                         side
@@ -2015,7 +2015,7 @@ viewSidesWithEndScores model data game sides =
                         , input
                             [ class "form-control"
                             , style "width" "70px"
-                            , value (Maybe.withDefault "" side.cumulativeLsd)
+                            , value (Maybe.withDefault "" side.lsdCumulative)
                             , onInput (UpdateSideCumulativeLsd side)
                             ]
                             []
