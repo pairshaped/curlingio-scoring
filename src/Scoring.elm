@@ -1356,6 +1356,10 @@ update msg model =
                     if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
                         { shot | curlerId = String.toInt val }
 
+                    else if shot.endNumber > forShot.endNumber && shot.shotNumber == forShot.shotNumber && shot.turn == Nothing && shot.throw == Nothing && shot.rating == Nothing then
+                        -- We also want to update all future ends with the curler change if turn, throw, rate has not been capture for it yet.
+                        { shot | curlerId = String.toInt val }
+
                     else
                         shot
 
