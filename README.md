@@ -14,9 +14,6 @@
 * Setting first hammer (last shot first end).
 * Setting rock colors.
 * Ends are added automatically if tied after regulation (10 ends). Manually setting the result to tied will remove extra end(s).
-
-## Roadmap
-
 * Shot by shot (enabled via league / competition settings)
 
 ## For Contributors
