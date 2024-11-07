@@ -303,7 +303,7 @@ decodeSideResult =
 
                     "conceded" ->
                         -- Support for legacy entries.
-                        Decode.succeed Forfeited
+                        Decode.succeed Lost
 
                     "tied" ->
                         Decode.succeed Tied
