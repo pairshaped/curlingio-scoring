@@ -125,6 +125,8 @@ type SideResult
     = Won
     | Lost
     | Forfeited
+      -- We aren't accepting conceded results, since they are just losses.
+      -- | Conceded
     | Tied
     | NoResult
 
@@ -302,7 +304,8 @@ decodeSideResult =
                         Decode.succeed Forfeited
 
                     "conceded" ->
-                        -- Support for legacy entries.
+                        -- We aren't accepting conceded results, since they are just losses.
+                        -- Decode.succeed Conceded
                         Decode.succeed Lost
 
                     "tied" ->
@@ -459,6 +462,9 @@ encodeSideResult sideResult =
         Forfeited ->
             Encode.string "forfeited"
 
+        -- We aren't accepting conceded results, since they are just losses.
+        -- Conceded ->
+        --     Encode.string "conceded"
         Tied ->
             Encode.string "tied"
 
@@ -552,6 +558,29 @@ findDraw draws drawId =
     List.Extra.find (\draw -> draw.id == drawId) draws
 
 
+canForfeit : ( Side, Side ) -> Bool
+canForfeit sides =
+    let
+        ( top, bot ) =
+            sides
+    in
+    -- Can't forfeit if there are any non-zero scores.
+    -- Forfeits are only for when the teams don't play.
+    (Maybe.withDefault 0 top.score == 0)
+        && (Maybe.withDefault 0 bot.score == 0)
+
+
+validGameResultOptions : ( Side, Side ) -> List SideResult
+validGameResultOptions sides =
+    if canForfeit sides then
+        [ Won, Lost, Forfeited, Tied, NoResult ]
+
+    else
+        -- We aren't accepting conceded results, since they are just losses.
+        -- [ Won, Lost, Conceded, Tied, NoResult ]
+        [ Won, Lost, Tied, NoResult ]
+
+
 sideResultForDisplay : SideResult -> String
 sideResultForDisplay result =
     case result of
@@ -564,6 +593,9 @@ sideResultForDisplay result =
         Forfeited ->
             "Forfeited"
 
+        -- We aren't accepting conceded results, since they are just losses.
+        -- Conceded ->
+        --     "Conceded"
         Tied ->
             "Tied"
 
@@ -583,6 +615,9 @@ sideResultColor result =
         Forfeited ->
             "danger"
 
+        -- We aren't accepting conceded results, since they are just losses.
+        -- Conceded ->
+        --     "danger"
         Tied ->
             "info"
 
@@ -683,6 +718,22 @@ hasHammerInEnd onSide ( top, bot ) endIndex =
                 -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
                 -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
                 Nothing
+
+
+correctForfeits : ( Side, Side ) -> ( Side, Side )
+correctForfeits sides =
+    let
+        ( top, bot ) =
+            sides
+    in
+    if top.result == Forfeited && canForfeit sides == False then
+        ( { top | result = Lost }, bot )
+
+    else if bot.result == Forfeited && canForfeit sides == False then
+        ( top, { bot | result = Lost } )
+
+    else
+        sides
 
 
 correctEnds : Settings -> ( Side, Side ) -> ( Side, Side )
@@ -1058,20 +1109,20 @@ update msg model =
         UpdateSideScore onSide newScore ->
             let
                 updatedSide side =
-                    if side.id == onSide.id then
-                        let
-                            updatedScore =
-                                case String.toInt newScore of
-                                    Just int ->
-                                        if int > 99 || int < 0 then
-                                            Nothing
-
-                                        else
-                                            Just int
-
-                                    Nothing ->
+                    let
+                        updatedScore =
+                            case String.toInt newScore of
+                                Just int ->
+                                    if int > 99 || int < 0 then
                                         Nothing
-                        in
+
+                                    else
+                                        Just int
+
+                                Nothing ->
+                                    Nothing
+                    in
+                    if side.id == onSide.id then
                         { side | score = updatedScore }
 
                     else
@@ -1080,7 +1131,7 @@ update msg model =
                 updatedGame game =
                     case game.sides of
                         Just sides ->
-                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides |> correctForfeits), changed = True }
 
                         Nothing ->
                             game
@@ -1209,7 +1260,22 @@ update msg model =
             let
                 updatedSide side =
                     if side.id == onSide.id then
-                        { side | result = newResult }
+                        -- Don't allow a forfeit if the game has end scores
+                        { side
+                            | result =
+                                case ( newResult, onSide.score ) of
+                                    ( Forfeited, Nothing ) ->
+                                        newResult
+
+                                    ( Forfeited, Just 0 ) ->
+                                        newResult
+
+                                    ( Forfeited, _ ) ->
+                                        Lost
+
+                                    _ ->
+                                        newResult
+                        }
 
                     else
                         case newResult of
@@ -1222,6 +1288,9 @@ update msg model =
                             Forfeited ->
                                 { side | result = Won }
 
+                            -- We aren't accepting conceded results, since they are just losses.
+                            -- Conceded ->
+                            --     { side | result = Won }
                             Tied ->
                                 { side | result = Tied }
 
@@ -1291,18 +1360,17 @@ update msg model =
                     }
 
                 updatedSide side =
-                    if side.id == onSide.id then
+                    (if side.id == onSide.id then
                         { side | endScores = List.Extra.setAt endIndex newScore side.endScores }
-                            |> updatedScore
 
-                    else if Maybe.withDefault 0 newScore > 0 then
+                     else if Maybe.withDefault 0 newScore > 0 then
                         -- If we have a score greater than 0, then make sure the other team scores 0
                         { side | endScores = List.Extra.setAt endIndex (Just 0) side.endScores }
-                            |> updatedScore
 
-                    else
+                     else
                         side
-                            |> updatedScore
+                    )
+                        |> updatedScore
 
                 updatedGame game =
                     case model.data of
@@ -1313,6 +1381,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (( updatedSide (Tuple.first sides), updatedSide (Tuple.second sides) )
+                                                    |> correctForfeits
                                                     |> correctEnds data.settings
                                                 )
                                         , changed = True
@@ -1794,7 +1863,7 @@ viewSides model data game sides =
                     in
                     div
                         [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                        (List.map viewResultButton [ Won, Lost, Forfeited, Tied, NoResult ])
+                        (List.map viewResultButton (validGameResultOptions sides))
             in
             p
                 []
@@ -2052,7 +2121,7 @@ viewSidesWithEndScores model data game sides =
                         , div [ class "d-flex " ]
                             [ div
                                 [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                                (List.map viewResultButton [ Won, Lost, Forfeited, Tied, NoResult ])
+                                (List.map viewResultButton (validGameResultOptions sides))
                             ]
                         ]
             in
