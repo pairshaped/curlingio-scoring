@@ -53,6 +53,7 @@ type alias Settings =
     , numberOfEnds : Int
     , shotByShotEnabled : Bool
     , lastStoneDrawEnabled : Bool
+    , mixedDoubles : Bool
     }
 
 
@@ -184,6 +185,7 @@ decodeSettings =
         |> optional "number_of_ends" int 10
         |> optional "shot_by_shot_enabled" bool False
         |> optional "last_stone_draw_enabled" bool False
+        |> optional "mixed_doubles" bool False
 
 
 decodeDraw : Decoder Draw
@@ -737,7 +739,7 @@ correctForfeits sides =
 
 
 correctEnds : Settings -> ( Side, Side ) -> ( Side, Side )
-correctEnds { numberOfEnds, shotByShotEnabled } ( top, bot ) =
+correctEnds { numberOfEnds, shotByShotEnabled, mixedDoubles } ( top, bot ) =
     let
         countEndsScored endScores =
             endScores
@@ -812,16 +814,11 @@ correctEnds { numberOfEnds, shotByShotEnabled } ( top, bot ) =
         removeNothingEnds ( top, bot )
             |> addMissingNothingEnds
     )
-        |> withInitializedShots shotByShotEnabled
+        |> withInitializedShots shotByShotEnabled mixedDoubles
 
 
-shotNumberToCurlerIndex : Int -> Int
-shotNumberToCurlerIndex shotNumber =
-    round (toFloat shotNumber / 2) - 1
-
-
-withInitializedShots : Bool -> ( Side, Side ) -> ( Side, Side )
-withInitializedShots shotByShotEnabled ( top, bot ) =
+withInitializedShots : Bool -> Bool -> ( Side, Side ) -> ( Side, Side )
+withInitializedShots shotByShotEnabled mixedDoubles ( top, bot ) =
     if not shotByShotEnabled then
         ( top, bot )
 
@@ -837,16 +834,43 @@ withInitializedShots shotByShotEnabled ( top, bot ) =
                             updatedShotsForEnd endNumber _ =
                                 let
                                     curlerIdForShotNumber shotNumber =
-                                        -- We're turning the shot number into the curler index by doing: round (shotNumber / 2),
-                                        -- because there are 2 consecutive shots per curler, so the 7th shot should be the 4th curler (skip) for example.
-                                        List.Extra.getAt (shotNumberToCurlerIndex shotNumber) side.teamCurlers
+                                        let
+                                            -- We're turning the shot number into the curler index by doing: round (shotNumber / 2),
+                                            -- because there are 2 consecutive shots per curler, so the 7th shot should be the 4th curler (skip) for example.
+                                            curlerIndex =
+                                                if mixedDoubles then
+                                                    -- In mixed doubles, the first curlers throws 1, 5 and the second curler throws 2, 3, 4
+                                                    case shotNumber of
+                                                        2 ->
+                                                            1
+
+                                                        3 ->
+                                                            1
+
+                                                        4 ->
+                                                            1
+
+                                                        _ ->
+                                                            0
+
+                                                else
+                                                    round (toFloat shotNumber / 2) - 1
+                                        in
+                                        List.Extra.getAt curlerIndex side.teamCurlers
                                             |> Maybe.map (\c -> c.curlerId)
 
                                     missingShot shotNumber =
                                         -- Find the curler for the shot, if there is one
                                         Shot (endNumber + 1) shotNumber (curlerIdForShotNumber shotNumber) Nothing Nothing Nothing
+
+                                    totalShotsPerSide =
+                                        if mixedDoubles then
+                                            5
+
+                                        else
+                                            8
                                 in
-                                List.range 1 8
+                                List.range 1 totalShotsPerSide
                                     |> List.map
                                         (\onShotNumber ->
                                             case side.shots of
