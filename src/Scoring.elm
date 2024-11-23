@@ -639,8 +639,8 @@ rockColorValueForLabel rockColors position =
         |> Maybe.withDefault ""
 
 
-hasHammerInEnd : Side -> ( Side, Side ) -> Int -> Maybe Bool
-hasHammerInEnd onSide ( top, bot ) endIndex =
+hasHammerInEnd : Bool -> Side -> ( Side, Side ) -> Int -> Maybe Bool
+hasHammerInEnd mixedDoubles onSide ( top, bot ) endIndex =
     -- Figures out which side has hammer for a specific end (index).
     -- For example, you can pass in both sides and an endIndex of 4, and we'll figure out who won the 3rd end, and return which side index gets hammer in the 4th (0 or 1)
     if endIndex == 0 then
@@ -665,9 +665,17 @@ hasHammerInEnd onSide ( top, bot ) endIndex =
                             -- top won previous end, so bot has next hammer
                             Just (bot.id == onSide.id)
 
+                        else if mixedDoubles then
+                            -- Blanked ends (ties) in mixed doubles are a special case,
+                            -- Instead of keeping the hammer, it's given to the other team,
+                            -- So it's the opposite of what we'd normally do.
+                            Maybe.map not (hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1))
+
                         else
-                            -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                            hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
+                            -- Tied (blanked) previous end
+                            -- In normal play, when you blank an end, you keep the hammer (advantage),
+                            -- Whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
+                            hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1)
 
                     ( Nothing, Just _ ) ->
                         -- top lost previous end, so top has next hammer
@@ -679,7 +687,7 @@ hasHammerInEnd onSide ( top, bot ) endIndex =
 
                     ( Nothing, Nothing ) ->
                         -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                        -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
+                        -- hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1)
                         Nothing
 
             ( Nothing, Just botScore_ ) ->
@@ -692,11 +700,11 @@ hasHammerInEnd onSide ( top, bot ) endIndex =
 
                         else
                             -- tied, recurse
-                            hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
+                            hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1)
 
                     Nothing ->
                         -- tied, recurse
-                        -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
+                        -- hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1)
                         Nothing
 
             ( Just topScore_, Nothing ) ->
@@ -709,16 +717,16 @@ hasHammerInEnd onSide ( top, bot ) endIndex =
 
                         else
                             -- tied, recurse
-                            hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
+                            hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1)
 
                     Nothing ->
                         -- tied, recurse
-                        -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
+                        -- hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1)
                         Nothing
 
             ( Nothing, Nothing ) ->
                 -- Tied, whoever had hammer last time, get's it again, so recurse using previous end as the starting point.
-                -- hasHammerInEnd onSide ( top, bot ) (endIndex - 1)
+                -- hasHammerInEnd mixedDoubles onSide ( top, bot ) (endIndex - 1)
                 Nothing
 
 
@@ -1950,6 +1958,9 @@ viewSides model data game sides =
 viewSidesWithEndScores : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
 viewSidesWithEndScores model data game sides =
     let
+        { lastStoneDrawEnabled, shotByShotEnabled, mixedDoubles, rockColors } =
+            data.settings
+
         numberOfEnds =
             let
                 ( top, bot ) =
@@ -1978,14 +1989,14 @@ viewSidesWithEndScores model data game sides =
                     let
                         onTabIndex =
                             -- If shto by shot is enabled, ends past the currently focused end will need to account for all of the shot by shot tabs (16 * 4)
-                            if data.settings.shotByShotEnabled && game.focusedEndNumber < endNumber then
+                            if shotByShotEnabled && game.focusedEndNumber < endNumber then
                                 ((sideIndex + endNumber) * 2) - sideIndex - 1 + (16 * 4)
 
                             else
                                 ((sideIndex + endNumber) * 2) - sideIndex - 1
 
                         hasHammer =
-                            Maybe.withDefault False (hasHammerInEnd side sides (endNumber - 1))
+                            Maybe.withDefault False (hasHammerInEnd mixedDoubles side sides (endNumber - 1))
                     in
                     td
                         [ classList
@@ -2021,7 +2032,7 @@ viewSidesWithEndScores model data game sides =
                 (td [ class "p-2" ]
                     [ div [ class "d-flex" ]
                         [ div
-                            [ style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.position) ]
+                            [ style "border-bottom" ("solid 3px " ++ rockColorValueForLabel rockColors side.position) ]
                             [ text side.teamName ]
                         , if side.firstHammer then
                             span [ class "ml-2" ] [ text "*" ]
@@ -2075,7 +2086,7 @@ viewSidesWithEndScores model data game sides =
                             ]
                             [ text "First Hammer" ]
                         , div [ class "d-flex align-items-center" ]
-                            (List.indexedMap viewColorButton data.settings.rockColors)
+                            (List.indexedMap viewColorButton rockColors)
                         ]
 
                 viewSideTimeRemaining : Html Msg
@@ -2151,11 +2162,11 @@ viewSidesWithEndScores model data game sides =
             in
             div
                 []
-                [ div [ class "d-flex", style "border-bottom" ("solid 3px " ++ rockColorValueForLabel data.settings.rockColors side.position) ]
+                [ div [ class "d-flex", style "border-bottom" ("solid 3px " ++ rockColorValueForLabel rockColors side.position) ]
                     [ h5 [ class "mr-2" ] [ text side.teamName ]
                     , h5 [] [ text scoreForDisplay ]
                     ]
-                , if data.settings.shotByShotEnabled then
+                , if shotByShotEnabled then
                     viewShots sideIndex side game.focusedEndNumber game
 
                   else
@@ -2163,7 +2174,7 @@ viewSidesWithEndScores model data game sides =
                 , viewSideColor
                 , viewSideResult
                 , viewSideTimeRemaining
-                , if data.settings.lastStoneDrawEnabled then
+                , if lastStoneDrawEnabled then
                     div [ class "d-flex mt-2" ]
                         [ viewSideLsd, viewSideCumulativeLsd ]
 
@@ -2185,12 +2196,12 @@ viewSidesWithEndScores model data game sides =
 
         sidesOrderedForShots =
             -- If shot by shot is enabled, the side with the hammer should always show up last (on the right).
-            if data.settings.shotByShotEnabled then
+            if shotByShotEnabled then
                 let
                     ( top, bot ) =
                         sides
                 in
-                if Maybe.withDefault False (hasHammerInEnd top sides (game.focusedEndNumber - 1)) then
+                if Maybe.withDefault False (hasHammerInEnd mixedDoubles top sides (game.focusedEndNumber - 1)) then
                     ( bot, top )
 
                 else
