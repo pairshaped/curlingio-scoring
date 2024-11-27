@@ -571,8 +571,8 @@ findDraw draws drawId =
     List.Extra.find (\draw -> draw.id == drawId) draws
 
 
-canForfeit : ( Side, Side ) -> Bool
-canForfeit sides =
+hasNoScores : ( Side, Side ) -> Bool
+hasNoScores sides =
     let
         ( top, bot ) =
             sides
@@ -587,7 +587,7 @@ validGameResultOptions : Settings -> ( Side, Side ) -> List SideResult
 validGameResultOptions { tiedResultEnabled, unnecessaryResultEnabled } sides =
     let
         forfeitedState =
-            if canForfeit sides then
+            if hasNoScores sides then
                 Just Forfeited
 
             else
@@ -601,7 +601,7 @@ validGameResultOptions { tiedResultEnabled, unnecessaryResultEnabled } sides =
                 Nothing
 
         unnecessaryState =
-            if unnecessaryResultEnabled then
+            if unnecessaryResultEnabled && hasNoScores sides then
                 Just Unnecessary
 
             else
@@ -770,10 +770,10 @@ correctForfeits sides =
         ( top, bot ) =
             sides
     in
-    if top.result == Forfeited && canForfeit sides == False then
+    if top.result == Forfeited && hasNoScores sides == False then
         ( { top | result = Lost }, bot )
 
-    else if bot.result == Forfeited && canForfeit sides == False then
+    else if bot.result == Forfeited && hasNoScores sides == False then
         ( top, { bot | result = Lost } )
 
     else
