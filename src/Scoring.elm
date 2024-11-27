@@ -54,6 +54,8 @@ type alias Settings =
     , shotByShotEnabled : Bool
     , lastStoneDrawEnabled : Bool
     , mixedDoubles : Bool
+    , tiedResultEnabled : Bool
+    , unnecessaryResultEnabled : Bool
     }
 
 
@@ -129,6 +131,7 @@ type SideResult
       -- We aren't accepting conceded results, since they are just losses.
       -- | Conceded
     | Tied
+    | Unnecessary
     | NoResult
 
 
@@ -186,6 +189,8 @@ decodeSettings =
         |> optional "shot_by_shot_enabled" bool False
         |> optional "last_stone_draw_enabled" bool False
         |> optional "mixed_doubles" bool False
+        |> optional "tied_result_enabled" bool False
+        |> optional "unnecessary_result_enabled" bool False
 
 
 decodeDraw : Decoder Draw
@@ -312,6 +317,9 @@ decodeSideResult =
 
                     "tied" ->
                         Decode.succeed Tied
+
+                    "unnecessary" ->
+                        Decode.succeed Unnecessary
 
                     _ ->
                         Decode.succeed NoResult
@@ -470,6 +478,9 @@ encodeSideResult sideResult =
         Tied ->
             Encode.string "tied"
 
+        Unnecessary ->
+            Encode.string "unnecessary"
+
         NoResult ->
             Encode.null
 
@@ -572,15 +583,32 @@ canForfeit sides =
         && (Maybe.withDefault 0 bot.score == 0)
 
 
-validGameResultOptions : ( Side, Side ) -> List SideResult
-validGameResultOptions sides =
-    if canForfeit sides then
-        [ Won, Lost, Forfeited, Tied, NoResult ]
+validGameResultOptions : Settings -> ( Side, Side ) -> List SideResult
+validGameResultOptions { tiedResultEnabled, unnecessaryResultEnabled } sides =
+    let
+        forfeitedState =
+            if canForfeit sides then
+                Just Forfeited
 
-    else
-        -- We aren't accepting conceded results, since they are just losses.
-        -- [ Won, Lost, Conceded, Tied, NoResult ]
-        [ Won, Lost, Tied, NoResult ]
+            else
+                Nothing
+
+        tiedState =
+            if tiedResultEnabled then
+                Just Tied
+
+            else
+                Nothing
+
+        unnecessaryState =
+            if unnecessaryResultEnabled then
+                Just Unnecessary
+
+            else
+                Nothing
+    in
+    [ Just Won, Just Lost, forfeitedState, tiedState, unnecessaryState, Just NoResult ]
+        |> List.filterMap identity
 
 
 sideResultForDisplay : SideResult -> String
@@ -600,6 +628,9 @@ sideResultForDisplay result =
         --     "Conceded"
         Tied ->
             "Tied"
+
+        Unnecessary ->
+            "Unnecessary"
 
         NoResult ->
             "TBD"
@@ -621,6 +652,9 @@ sideResultColor result =
         -- Conceded ->
         --     "danger"
         Tied ->
+            "info"
+
+        Unnecessary ->
             "info"
 
         NoResult ->
@@ -1326,6 +1360,9 @@ update msg model =
                             Tied ->
                                 { side | result = Tied }
 
+                            Unnecessary ->
+                                { side | result = Unnecessary }
+
                             NoResult ->
                                 { side | result = NoResult }
 
@@ -1895,7 +1932,7 @@ viewSides model data game sides =
                     in
                     div
                         [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                        (List.map viewResultButton (validGameResultOptions sides))
+                        (List.map viewResultButton (validGameResultOptions data.settings sides))
             in
             p
                 []
@@ -2156,7 +2193,7 @@ viewSidesWithEndScores model data game sides =
                         , div [ class "d-flex " ]
                             [ div
                                 [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                                (List.map viewResultButton (validGameResultOptions sides))
+                                (List.map viewResultButton (validGameResultOptions data.settings sides))
                             ]
                         ]
             in
