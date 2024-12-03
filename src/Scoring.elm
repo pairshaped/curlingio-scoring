@@ -1868,7 +1868,7 @@ viewGameMessage model game =
 
                     _ ->
                         if data.settings.endScoresEnabled then
-                            div [ class "alert alert-warning" ] [ text "There are unsaved changes" ]
+                            div [ class "alert alert-warning" ] [ text "There are unsaved changes." ]
 
                         else
                             text ""
