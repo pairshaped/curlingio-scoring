@@ -32,7 +32,7 @@ type alias Model =
 
 
 type alias Flags =
-    { baseUrl : String
+    { url : String
     , eventName : String
     , sheets : List String
     , rockColors : List RockColor
@@ -47,21 +47,13 @@ type alias Flags =
 
 
 type alias Data =
-    { draws : List Draw
-    , games : List Game
-    }
-
-
-type alias Draw =
-    { id : Int
-    , label : String
-    , startsAt : String
+    { games : List Game
     }
 
 
 type alias Game =
     { id : String
-    , drawId : Int
+    , drawLabel : String
     , sheet : Int
     , name : String
     , state : GameState
@@ -157,29 +149,6 @@ validShotRatings =
 -- DECODERS
 
 
-decodeData : Decoder Data
-decodeData =
-    Decode.succeed Data
-        |> required "draws" (list decodeDraw)
-        |> required "games" (list decodeGame)
-
-
-decodeDraw : Decoder Draw
-decodeDraw =
-    Decode.succeed Draw
-        |> required "id" int
-        |> required "label" string
-        |> required "starts_at" string
-
-
-decodeRockColor : Decoder RockColor
-decodeRockColor =
-    Decode.succeed RockColor
-        |> required "pos" int
-        |> required "key" string
-        |> required "val" string
-
-
 decodeGameState : Decoder GameState
 decodeGameState =
     Decode.string
@@ -201,20 +170,7 @@ decodeGame : Decoder Game
 decodeGame =
     Decode.succeed Game
         |> required "id" string
-        |> required "draw_id" int
-        |> required "sheet" int
-        |> required "name" string
-        |> required "state" decodeGameState
-        |> hardcoded Nothing
-        |> hardcoded False
-        |> hardcoded 1
-
-
-decodeGameDetails : Decoder Game
-decodeGameDetails =
-    Decode.succeed Game
-        |> required "id" string
-        |> required "draw_id" int
+        |> required "draw_label" string
         |> required "sheet" int
         |> required "name" string
         |> required "state" decodeGameState
@@ -463,7 +419,7 @@ encodeSideResult sideResult =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( Model flags NotAsked NotAsked NotAsked False
-    , getData flags.baseUrl
+    , getGame flags.url
     )
 
 
@@ -492,46 +448,14 @@ errorMessage error =
             "Bad body response from server. Please contact Curling I/O support if the issue persists for more than a few minutes. Details: \"" ++ string ++ "\""
 
 
-getData : String -> Cmd Msg
-getData baseUrl =
-    let
-        url =
-            baseUrl ++ "/games"
-    in
-    RemoteData.Http.get url GotData decodeData
-
-
 getGame : String -> String -> Cmd Msg
-getGame baseUrl id =
-    let
-        url =
-            baseUrl ++ "/games/" ++ id
-    in
-    RemoteData.Http.get url GotGame decodeGameDetails
+getGame url =
+    RemoteData.Http.get url GotGame decodeGame
 
 
 patchGame : String -> Game -> Cmd Msg
-patchGame baseUrl game =
-    let
-        url =
-            baseUrl ++ "/games/" ++ game.id
-    in
-    RemoteData.Http.patch url PatchedGame decodeGameDetails (encodeGame game)
-
-
-findGame : List Game -> Int -> Int -> Maybe Game
-findGame games drawId sheet =
-    List.Extra.find (\game -> game.drawId == drawId && game.sheet == sheet) games
-
-
-findGameByName : List Game -> String -> String -> Maybe Game
-findGameByName games excludeId name =
-    List.Extra.find (\game -> game.id /= excludeId && game.name == name) games
-
-
-findDraw : List Draw -> Int -> Maybe Draw
-findDraw draws drawId =
-    List.Extra.find (\draw -> draw.id == drawId) draws
+patchGame url game =
+    RemoteData.Http.patch url PatchedGame decodeGame (encodeGame game)
 
 
 hasNoScores : ( Side, Side ) -> Bool
@@ -919,16 +843,12 @@ run m =
 type Msg
     = NoOp
     | ForcedTick Time.Posix
-    | GotData (WebData Data)
-    | ReloadData
     | ToggleFullScreen
-    | SelectGame Game
     | GotGame (WebData Game)
     | SaveGame
     | PatchedGame (WebData Game)
     | ResetSavedGameMessage Time.Posix
     | ReloadGame
-    | CloseGame
     | SwapFirstHammer
     | UpdateSidePosition Side Int
     | UpdateSideScore Side String
@@ -954,25 +874,8 @@ update msg model =
             -- This will clear the save message in our view.
             ( model, Cmd.none )
 
-        GotData response ->
-            ( { model | data = response }, Cmd.none )
-
-        ReloadData ->
-            ( { model
-                | data = Loading
-                , savedGame = NotAsked
-                , selectedGame = NotAsked
-              }
-            , Cmd.batch
-                [ getData model.flags.baseUrl
-                ]
-            )
-
         ToggleFullScreen ->
             ( { model | fullScreen = not model.fullScreen }, Cmd.none )
-
-        SelectGame game ->
-            ( { model | selectedGame = Loading }, getGame model.flags.baseUrl game.id )
 
         GotGame response ->
             let
@@ -1000,7 +903,7 @@ update msg model =
                 sendPatch =
                     case model.selectedGame of
                         Success game ->
-                            patchGame model.flags.baseUrl game
+                            patchGame model.flags.url game
 
                         _ ->
                             Cmd.none
@@ -1071,16 +974,7 @@ update msg model =
                 , savedGame = response
                 , data = RemoteData.map updatedData model.data
               }
-            , case model.data of
-                Success data ->
-                    if model.flags.endScoresEnabled then
-                        Cmd.none
-
-                    else
-                        sendMsg CloseGame
-
-                _ ->
-                    Cmd.none
+            , Cmd.none
             )
 
         ResetSavedGameMessage t ->
@@ -1090,13 +984,10 @@ update msg model =
         ReloadGame ->
             case model.selectedGame of
                 Success game ->
-                    ( { model | selectedGame = Loading, savedGame = NotAsked }, getGame model.flags.baseUrl game.id )
+                    ( { model | selectedGame = Loading, savedGame = NotAsked }, getGame model.flags.url )
 
                 _ ->
                     ( model, Cmd.none )
-
-        CloseGame ->
-            ( { model | selectedGame = NotAsked, savedGame = NotAsked }, Cmd.none )
 
         SwapFirstHammer ->
             let
@@ -1680,7 +1571,7 @@ view model =
                         viewFetchError (errorMessage error)
 
                     _ ->
-                        viewData model data
+                        viewNotReady "No game selected..."
         ]
 
 
@@ -1694,96 +1585,7 @@ viewFetchError message =
     div
         [ class "p-3" ]
         [ p [] [ text message ]
-        , button [ class "btn btn-primary", onClick ReloadData ] [ text "Reload" ]
-        ]
-
-
-viewData : Model -> Data -> Html Msg
-viewData model data =
-    div
-        [ class "p-3" ]
-        [ div
-            [ class "d-flex justify-content-between mb-2" ]
-            [ h5 [] [ text model.flags.eventName ]
-            , div [ class "text-right" ]
-                [ button [ class "btn btn-sm btn-primary mr-2", onClick ReloadData ] [ text "Reload" ]
-                , button [ class "btn btn-sm btn-secondary", onClick ToggleFullScreen ]
-                    [ text
-                        (if model.fullScreen then
-                            "Exit"
-
-                         else
-                            "Full Screen"
-                        )
-                    ]
-                ]
-            ]
-        , div
-            [ class "table-responsive" ]
-            [ table
-                [ class "table" ]
-                [ viewHeader model.flags
-                , viewDraws model.flags data
-                ]
-            ]
-        ]
-
-
-viewHeader : Flags -> Html Msg
-viewHeader flags =
-    let
-        viewSheet sheet =
-            th [ class "text-center", style "min-width" "160px" ] [ text sheet ]
-    in
-    thead
-        []
-        [ tr
-            []
-            (th [ style "min-width" "60px" ] [ text "Draw" ]
-                :: th [ style "min-width" "170px" ] [ text "Starts" ]
-                :: List.map viewSheet flags.sheets
-            )
-        ]
-
-
-viewDraws : Flags -> Data -> Html Msg
-viewDraws flags data =
-    tbody []
-        (List.map (viewDraw flags data) data.draws)
-
-
-viewDraw : Flags -> Data -> Draw -> Html Msg
-viewDraw flags data draw =
-    tr [ class "m-2" ]
-        (td [] [ text draw.label ]
-            :: td [] [ text draw.startsAt ]
-            :: (List.range 1 (List.length flags.sheets)
-                    |> List.map (viewDrawSheet data.games draw.id)
-               )
-        )
-
-
-viewDrawSheet : List Game -> Int -> Int -> Html Msg
-viewDrawSheet games drawId sheet =
-    let
-        viewDrawSheetGame game =
-            a
-                [ href "#"
-                , classList
-                    [ ( "text-secondary", game.state == GameComplete )
-                    , ( "font-weight-bold", game.state == GameActive )
-                    ]
-                , onClickPreventDefault (SelectGame game)
-                ]
-                [ text game.name ]
-    in
-    td [ class "text-center" ]
-        [ case findGame games drawId sheet of
-            Just game ->
-                viewDrawSheetGame game
-
-            Nothing ->
-                text ""
+        , button [ class "btn btn-primary", onClick ReloadGame ] [ text "Reload" ]
         ]
 
 
@@ -1917,15 +1719,7 @@ viewSides model data game sides =
                         [ text game.name ]
                     , h6
                         [ class "card-subtitle mb-2 text-muted" ]
-                        [ text
-                            (case findDraw data.draws game.drawId of
-                                Just draw ->
-                                    "Draw " ++ draw.label ++ " - " ++ draw.startsAt
-
-                                Nothing ->
-                                    "Unknown Draw"
-                            )
-                        ]
+                        [ text game.drawLabel ]
                     , hr [] []
                     , viewGameMessage model game
                     ]
@@ -1938,7 +1732,7 @@ viewSides model data game sides =
                 [ button
                     [ class "btn btn-secondary"
                     , disabled (model.savedGame == Loading)
-                    , onClick CloseGame
+                    , onClick NoOp -- TODO
                     ]
                     [ text "Cancel" ]
                 , button
@@ -2220,15 +2014,7 @@ viewSidesWithEndScores model data game sides =
                             [ text game.name ]
                         , h6
                             [ class "card-subtitle mb-2 text-muted" ]
-                            [ text
-                                (case findDraw data.draws game.drawId of
-                                    Just draw ->
-                                        "Draw " ++ draw.label ++ " - " ++ draw.startsAt
-
-                                    Nothing ->
-                                        "Unknown Draw"
-                                )
-                            ]
+                            [ text game.drawLabel ]
                         ]
                     , viewGameMessage model game
                     ]
@@ -2262,7 +2048,7 @@ viewSidesWithEndScores model data game sides =
                          else
                             "Takes you back to the draw schedule."
                         )
-                    , onClick CloseGame
+                    , onClick NoOp -- TODO
                     ]
                     [ text "Back" ]
                 , button
