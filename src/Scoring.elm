@@ -1862,11 +1862,16 @@ viewGameMessage model game =
     if game.changed then
         case model.data of
             Success data ->
-                if data.settings.endScoresEnabled then
-                    div [ class "alert alert-warning" ] [ text "There are unsaved changes" ]
+                case model.savedGame of
+                    Failure error ->
+                        div [ class "alert alert-danger" ] [ text (errorMessage error) ]
 
-                else
-                    text ""
+                    _ ->
+                        if data.settings.endScoresEnabled then
+                            div [ class "alert alert-warning" ] [ text "There are unsaved changes" ]
+
+                        else
+                            text ""
 
             _ ->
                 text ""
