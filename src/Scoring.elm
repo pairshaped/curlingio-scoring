@@ -33,20 +33,8 @@ type alias Model =
 
 type alias Flags =
     { baseUrl : String
-    }
-
-
-type alias Data =
-    { settings : Settings
-    , draws : List Draw
-    , games : List Game
-    }
-
-
-type alias Settings =
-    { eventName : String
+    , eventName : String
     , sheets : List String
-    , currentDrawId : Int
     , rockColors : List RockColor
     , endScoresEnabled : Bool
     , numberOfEnds : Int
@@ -55,6 +43,12 @@ type alias Settings =
     , mixedDoubles : Bool
     , tiedResultEnabled : Bool
     , unnecessaryResultEnabled : Bool
+    }
+
+
+type alias Data =
+    { draws : List Draw
+    , games : List Game
     }
 
 
@@ -166,25 +160,8 @@ validShotRatings =
 decodeData : Decoder Data
 decodeData =
     Decode.succeed Data
-        |> required "settings" decodeSettings
         |> required "draws" (list decodeDraw)
         |> required "games" (list decodeGame)
-
-
-decodeSettings : Decoder Settings
-decodeSettings =
-    Decode.succeed Settings
-        |> required "event_name" string
-        |> required "sheets" (list string)
-        |> required "current_draw_id" int
-        |> required "rock_colors" (list decodeRockColor)
-        |> optional "end_scores_enabled" bool False
-        |> optional "number_of_ends" int 10
-        |> optional "shot_by_shot_enabled" bool False
-        |> optional "last_stone_draw_enabled" bool False
-        |> optional "mixed_doubles" bool False
-        |> optional "tied_result_enabled" bool False
-        |> optional "unnecessary_result_enabled" bool False
 
 
 decodeDraw : Decoder Draw
@@ -569,7 +546,7 @@ hasNoScores sides =
         && (Maybe.withDefault 0 bot.score == 0)
 
 
-validGameResultOptions : Settings -> ( Side, Side ) -> List SideResult
+validGameResultOptions : Flags -> ( Side, Side ) -> List SideResult
 validGameResultOptions { tiedResultEnabled, unnecessaryResultEnabled } sides =
     let
         forfeitedState =
@@ -766,7 +743,7 @@ correctForfeits sides =
         sides
 
 
-correctEnds : Settings -> ( Side, Side ) -> ( Side, Side )
+correctEnds : Flags -> ( Side, Side ) -> ( Side, Side )
 correctEnds { numberOfEnds, shotByShotEnabled, mixedDoubles } ( top, bot ) =
     let
         countEndsScored endScores =
@@ -1007,7 +984,7 @@ update msg model =
                                     { game
                                         | sides =
                                             Just
-                                                (correctEnds data.settings sides)
+                                                (correctEnds model.flags sides)
                                     }
 
                                 Nothing ->
@@ -1056,7 +1033,7 @@ update msg model =
                                                 { game
                                                     | sides =
                                                         Just
-                                                            (correctEnds data.settings sides)
+                                                            (correctEnds model.flags sides)
                                                     , focusedEndNumber = focusedEndNumber
                                                 }
 
@@ -1096,7 +1073,7 @@ update msg model =
               }
             , case model.data of
                 Success data ->
-                    if data.settings.endScoresEnabled then
+                    if model.flags.endScoresEnabled then
                         Cmd.none
 
                     else
@@ -1233,7 +1210,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds data.settings
+                                                    |> correctEnds model.flags
                                                 )
                                         , changed = True
                                     }
@@ -1264,7 +1241,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds data.settings
+                                                    |> correctEnds model.flags
                                                 )
                                         , changed = True
                                     }
@@ -1295,7 +1272,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds data.settings
+                                                    |> correctEnds model.flags
                                                 )
                                         , changed = True
                                     }
@@ -1361,7 +1338,7 @@ update msg model =
                                         | sides =
                                             Just
                                                 (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds data.settings
+                                                    |> correctEnds model.flags
                                                 )
                                         , changed = True
                                     }
@@ -1437,7 +1414,7 @@ update msg model =
                                             Just
                                                 (( updatedSide (Tuple.first sides), updatedSide (Tuple.second sides) )
                                                     |> correctForfeits
-                                                    |> correctEnds data.settings
+                                                    |> correctEnds model.flags
                                                 )
                                         , changed = True
                                     }
@@ -1461,7 +1438,7 @@ update msg model =
                 forcedTickToUpdateShots =
                     case model.data of
                         Success data ->
-                            if data.settings.shotByShotEnabled then
+                            if model.flags.shotByShotEnabled then
                                 Task.perform ForcedTick (Process.sleep 20 |> Task.andThen (\_ -> Time.now))
 
                             else
@@ -1727,7 +1704,7 @@ viewData model data =
         [ class "p-3" ]
         [ div
             [ class "d-flex justify-content-between mb-2" ]
-            [ h5 [] [ text data.settings.eventName ]
+            [ h5 [] [ text model.flags.eventName ]
             , div [ class "text-right" ]
                 [ button [ class "btn btn-sm btn-primary mr-2", onClick ReloadData ] [ text "Reload" ]
                 , button [ class "btn btn-sm btn-secondary", onClick ToggleFullScreen ]
@@ -1745,15 +1722,15 @@ viewData model data =
             [ class "table-responsive" ]
             [ table
                 [ class "table" ]
-                [ viewHeader data.settings
-                , viewDraws data
+                [ viewHeader model.flags
+                , viewDraws model.flags data
                 ]
             ]
         ]
 
 
-viewHeader : Settings -> Html Msg
-viewHeader settings =
+viewHeader : Flags -> Html Msg
+viewHeader flags =
     let
         viewSheet sheet =
             th [ class "text-center", style "min-width" "160px" ] [ text sheet ]
@@ -1764,31 +1741,23 @@ viewHeader settings =
             []
             (th [ style "min-width" "60px" ] [ text "Draw" ]
                 :: th [ style "min-width" "170px" ] [ text "Starts" ]
-                :: List.map viewSheet settings.sheets
+                :: List.map viewSheet flags.sheets
             )
         ]
 
 
-viewDraws : Data -> Html Msg
-viewDraws data =
+viewDraws : Flags -> Data -> Html Msg
+viewDraws flags data =
     tbody []
-        (List.map (viewDraw data) data.draws)
+        (List.map (viewDraw flags data) data.draws)
 
 
-viewDraw : Data -> Draw -> Html Msg
-viewDraw data draw =
-    let
-        currentDrawClass =
-            if data.settings.currentDrawId == draw.id then
-                "table-active"
-
-            else
-                ""
-    in
-    tr [ class "m-2", class currentDrawClass ]
+viewDraw : Flags -> Data -> Draw -> Html Msg
+viewDraw flags data draw =
+    tr [ class "m-2" ]
         (td [] [ text draw.label ]
             :: td [] [ text draw.startsAt ]
-            :: (List.range 1 (List.length data.settings.sheets)
+            :: (List.range 1 (List.length flags.sheets)
                     |> List.map (viewDrawSheet data.games draw.id)
                )
         )
@@ -1829,7 +1798,7 @@ viewSelectedGame model data game =
             [ class "container" ]
             [ div
                 [ class "row justify-content-center align-items-center" ]
-                [ case ( data.settings.endScoresEnabled, game.sides ) of
+                [ case ( model.flags.endScoresEnabled, game.sides ) of
                     ( True, Just sides ) ->
                         viewSidesWithEndScores model data game sides
 
@@ -1853,7 +1822,7 @@ viewGameMessage model game =
                         div [ class "alert alert-danger" ] [ text (errorMessage error) ]
 
                     _ ->
-                        if data.settings.endScoresEnabled then
+                        if model.flags.endScoresEnabled then
                             div [ class "alert alert-warning" ] [ text "There are unsaved changes." ]
 
                         else
@@ -1923,7 +1892,7 @@ viewSides model data game sides =
                     in
                     div
                         [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                        (List.map viewResultButton (validGameResultOptions data.settings sides))
+                        (List.map viewResultButton (validGameResultOptions model.flags sides))
             in
             p
                 []
@@ -1987,7 +1956,7 @@ viewSidesWithEndScores : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
 viewSidesWithEndScores model data game sides =
     let
         { lastStoneDrawEnabled, shotByShotEnabled, mixedDoubles, rockColors } =
-            data.settings
+            model.flags
 
         numberOfEnds =
             let
@@ -1996,7 +1965,7 @@ viewSidesWithEndScores model data game sides =
             in
             List.length top.endScores
                 |> max (List.length bot.endScores)
-                |> max data.settings.numberOfEnds
+                |> max model.flags.numberOfEnds
 
         viewEndHeader : Int -> Html Msg
         viewEndHeader endNumber =
@@ -2184,7 +2153,7 @@ viewSidesWithEndScores model data game sides =
                         , div [ class "d-flex " ]
                             [ div
                                 [ class "btn-group btn-group-sm scoring-result-button-group flex-wrap justify-content-left mr-2" ]
-                                (List.map viewResultButton (validGameResultOptions data.settings sides))
+                                (List.map viewResultButton (validGameResultOptions model.flags sides))
                             ]
                         ]
             in

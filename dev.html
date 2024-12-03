@@ -61,8 +61,23 @@
     var scoring = Elm.Scoring.init(
       {
         node: document.getElementById("scoring"),
-        flags: { baseUrl: "http://canada.curling.test:3000/en/admin/events/18213" }
-        // flags: { baseUrl: "http://localhost:3000" }
+        flags: {
+          baseUrl: "http://canada.curling.test:3000/en/admin/events/18213",
+          // url: "http://canada.curling.test:3000/en/admin/events/18213/games/661a8e97-07ac-4994-b9dd-a541c8360242",
+          eventName: "2024 Canadian Mixed Doubles Curling Championship",
+          sheets: ["Sheet A", "Sheet B", "Sheet C", "Sheet D", "Sheet E", "Sheet F", "Sheet G", "Sheet H", "Sheet I"],
+          rockColors: [
+            { pos: 0, key: "red", val: "#cc0000" },
+            { pos: 1, key: "yellow", val: "#cccc00" }
+          ],
+          endScoresEnabled: true,
+          numberOfEnds: 8,
+          shotByShotEnabled: true,
+          lastStoneDrawEnabled: false,
+          mixedDoubles: true,
+          tiedResultEnabled: false,
+          unnecessaryResultEnabled: true
+        }
       }
     )
   </script>
