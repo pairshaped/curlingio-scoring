@@ -28,7 +28,6 @@ type alias Model =
     , savedGame : WebData Game
     , selectedGame : WebData Game
     , fullScreen : Bool
-    , localMode : Bool
     }
 
 
@@ -162,11 +161,6 @@ validShotRatings =
 
 
 -- DECODERS
-
-
-isLocalMode : String -> Bool
-isLocalMode url =
-    String.contains "localhost" url
 
 
 decodeData : Decoder Data
@@ -491,12 +485,8 @@ encodeSideResult sideResult =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    let
-        localMode =
-            isLocalMode flags.baseUrl
-    in
-    ( Model flags NotAsked NotAsked NotAsked False localMode
-    , getData localMode flags.baseUrl
+    ( Model flags NotAsked NotAsked NotAsked False
+    , getData flags.baseUrl
     )
 
 
@@ -525,15 +515,11 @@ errorMessage error =
             "Bad body response from server. Please contact Curling I/O support if the issue persists for more than a few minutes. Details: \"" ++ string ++ "\""
 
 
-getData : Bool -> String -> Cmd Msg
-getData localMode baseUrl =
+getData : String -> Cmd Msg
+getData baseUrl =
     let
         url =
-            if localMode then
-                baseUrl ++ "/db"
-
-            else
-                baseUrl ++ "/games"
+            baseUrl ++ "/games"
     in
     RemoteData.Http.get url GotData decodeData
 
@@ -1001,7 +987,7 @@ update msg model =
                 , selectedGame = NotAsked
               }
             , Cmd.batch
-                [ getData model.localMode model.flags.baseUrl
+                [ getData model.flags.baseUrl
                 ]
             )
 
