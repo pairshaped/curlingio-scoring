@@ -24,9 +24,8 @@ import Time
 
 type alias Model =
     { flags : Flags
-    , data : WebData Data
     , savedGame : WebData Game
-    , selectedGame : WebData Game
+    , game : WebData Game
     , fullScreen : Bool
     }
 
@@ -43,11 +42,6 @@ type alias Flags =
     , mixedDoubles : Bool
     , tiedResultEnabled : Bool
     , unnecessaryResultEnabled : Bool
-    }
-
-
-type alias Data =
-    { games : List Game
     }
 
 
@@ -418,7 +412,7 @@ encodeSideResult sideResult =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags NotAsked NotAsked NotAsked False
+    ( Model flags NotAsked NotAsked False
     , getGame flags.url
     )
 
@@ -448,9 +442,9 @@ errorMessage error =
             "Bad body response from server. Please contact Curling I/O support if the issue persists for more than a few minutes. Details: \"" ++ string ++ "\""
 
 
-getGame : String -> String -> Cmd Msg
+getGame : String -> Cmd Msg
 getGame url =
-    RemoteData.Http.get url GotGame decodeGame
+    RemoteData.Http.get (url ++ "/edit.json") GotGame decodeGame
 
 
 patchGame : String -> Game -> Cmd Msg
@@ -880,28 +874,23 @@ update msg model =
         GotGame response ->
             let
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game
-                                        | sides =
-                                            Just
-                                                (correctEnds model.flags sides)
-                                    }
+                    case game.sides of
+                        Just sides ->
+                            { game
+                                | sides =
+                                    Just
+                                        (correctEnds model.flags sides)
+                            }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame response, savedGame = NotAsked }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame response, savedGame = NotAsked }, Cmd.none )
 
         SaveGame ->
             let
                 sendPatch =
-                    case model.selectedGame of
+                    case model.game of
                         Success game ->
                             patchGame model.flags.url game
 
@@ -917,62 +906,23 @@ update msg model =
 
         PatchedGame response ->
             let
-                focusedEndNumber =
-                    case model.selectedGame of
-                        Success game ->
-                            game.focusedEndNumber
-
-                        _ ->
-                            1
-
-                selectedGame =
+                updatedGame oldGame =
                     case response of
-                        Success game ->
-                            Success
-                                (case model.data of
-                                    Success data ->
-                                        case game.sides of
-                                            Just sides ->
-                                                { game
-                                                    | sides =
-                                                        Just
-                                                            (correctEnds model.flags sides)
-                                                    , focusedEndNumber = focusedEndNumber
-                                                }
+                        Success newGame ->
+                            case newGame.sides of
+                                Just sides ->
+                                    { newGame | sides = Just (correctEnds model.flags sides), focusedEndNumber = oldGame.focusedEndNumber }
 
-                                            Nothing ->
-                                                { game | focusedEndNumber = focusedEndNumber }
-
-                                    _ ->
-                                        { game | focusedEndNumber = focusedEndNumber }
-                                )
+                                Nothing ->
+                                    { newGame | focusedEndNumber = oldGame.focusedEndNumber }
 
                         _ ->
                             -- Don't replace the currently selected game data on failure.
-                            model.selectedGame
-
-                updatedGame gameFromSave game =
-                    if game.id == gameFromSave.id then
-                        gameFromSave
-
-                    else
-                        game
-
-                updatedGames games =
-                    case response of
-                        Success decodedGame ->
-                            List.map (updatedGame decodedGame) games
-
-                        _ ->
-                            games
-
-                updatedData data =
-                    { data | games = updatedGames data.games }
+                            oldGame
             in
             ( { model
-                | selectedGame = selectedGame
+                | game = RemoteData.map updatedGame model.game
                 , savedGame = response
-                , data = RemoteData.map updatedData model.data
               }
             , Cmd.none
             )
@@ -982,9 +932,9 @@ update msg model =
             ( { model | savedGame = NotAsked }, Cmd.none )
 
         ReloadGame ->
-            case model.selectedGame of
+            case model.game of
                 Success game ->
-                    ( { model | selectedGame = Loading, savedGame = NotAsked }, getGame model.flags.url )
+                    ( { model | game = Loading, savedGame = NotAsked }, getGame model.flags.url )
 
                 _ ->
                     ( model, Cmd.none )
@@ -1002,7 +952,7 @@ update msg model =
                         Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            ( { model | game = RemoteData.map updatedGame model.game }
             , Cmd.none
             )
 
@@ -1024,7 +974,7 @@ update msg model =
                         Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateSideScore onSide newScore ->
             let
@@ -1056,7 +1006,7 @@ update msg model =
                         Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateSideTimeRemaining onSide newTimeRemaining ->
             let
@@ -1093,26 +1043,21 @@ update msg model =
                         side
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game
-                                        | sides =
-                                            Just
-                                                (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds model.flags
-                                                )
-                                        , changed = True
-                                    }
+                    case game.sides of
+                        Just sides ->
+                            { game
+                                | sides =
+                                    Just
+                                        (Tuple.mapBoth updatedSide updatedSide sides
+                                            |> correctEnds model.flags
+                                        )
+                                , changed = True
+                            }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateSideLsd onSide newLsd ->
             let
@@ -1124,26 +1069,21 @@ update msg model =
                         side
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game
-                                        | sides =
-                                            Just
-                                                (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds model.flags
-                                                )
-                                        , changed = True
-                                    }
+                    case game.sides of
+                        Just sides ->
+                            { game
+                                | sides =
+                                    Just
+                                        (Tuple.mapBoth updatedSide updatedSide sides
+                                            |> correctEnds model.flags
+                                        )
+                                , changed = True
+                            }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateSideCumulativeLsd onSide newCumulativeLsd ->
             let
@@ -1155,26 +1095,21 @@ update msg model =
                         side
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game
-                                        | sides =
-                                            Just
-                                                (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds model.flags
-                                                )
-                                        , changed = True
-                                    }
+                    case game.sides of
+                        Just sides ->
+                            { game
+                                | sides =
+                                    Just
+                                        (Tuple.mapBoth updatedSide updatedSide sides
+                                            |> correctEnds model.flags
+                                        )
+                                , changed = True
+                            }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateSideResult onSide newResult ->
             let
@@ -1221,26 +1156,21 @@ update msg model =
                                 { side | result = NoResult }
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game
-                                        | sides =
-                                            Just
-                                                (Tuple.mapBoth updatedSide updatedSide sides
-                                                    |> correctEnds model.flags
-                                                )
-                                        , changed = True
-                                    }
+                    case game.sides of
+                        Just sides ->
+                            { game
+                                | sides =
+                                    Just
+                                        (Tuple.mapBoth updatedSide updatedSide sides
+                                            |> correctEnds model.flags
+                                        )
+                                , changed = True
+                            }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateSideEndScore onSide endIndex newScoreStr ->
             let
@@ -1296,29 +1226,24 @@ update msg model =
                         |> updatedScore
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game
-                                        | sides =
-                                            Just
-                                                (( updatedSide (Tuple.first sides), updatedSide (Tuple.second sides) )
-                                                    |> correctForfeits
-                                                    |> correctEnds model.flags
-                                                )
-                                        , changed = True
-                                    }
+                    case game.sides of
+                        Just sides ->
+                            { game
+                                | sides =
+                                    Just
+                                        (( updatedSide (Tuple.first sides), updatedSide (Tuple.second sides) )
+                                            |> correctForfeits
+                                            |> correctEnds model.flags
+                                        )
+                                , changed = True
+                            }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
 
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateFocusedEndNumber endNumber ->
             let
@@ -1327,8 +1252,8 @@ update msg model =
 
                 -- For some reason, in order to reflect which curler is selected in shots data we need to force a second render on end number focus change.
                 forcedTickToUpdateShots =
-                    case model.data of
-                        Success data ->
+                    case model.game of
+                        Success game ->
                             if model.flags.shotByShotEnabled then
                                 Task.perform ForcedTick (Process.sleep 20 |> Task.andThen (\_ -> Time.now))
 
@@ -1338,7 +1263,7 @@ update msg model =
                         _ ->
                             Cmd.none
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            ( { model | game = RemoteData.map updatedGame model.game }
             , forcedTickToUpdateShots
             )
 
@@ -1368,19 +1293,14 @@ update msg model =
                         side
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+                    case game.sides of
+                        Just sides ->
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateShotTurn forSide forShot val ->
             let
@@ -1415,19 +1335,14 @@ update msg model =
                         side
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+                    case game.sides of
+                        Just sides ->
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateShotThrow forSide forShot val ->
             let
@@ -1462,19 +1377,14 @@ update msg model =
                         side
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+                    case game.sides of
+                        Just sides ->
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
         UpdateShotRating forSide forShot val ->
             let
@@ -1510,19 +1420,14 @@ update msg model =
                         side
 
                 updatedGame game =
-                    case model.data of
-                        Success data ->
-                            case game.sides of
-                                Just sides ->
-                                    { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
+                    case game.sides of
+                        Just sides ->
+                            { game | sides = Just (Tuple.mapBoth updatedSide updatedSide sides), changed = True }
 
-                                Nothing ->
-                                    game
-
-                        _ ->
+                        Nothing ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | game = RemoteData.map updatedGame model.game }, Cmd.none )
 
 
 
@@ -1549,7 +1454,7 @@ view model =
                 []
             )
         )
-        [ case model.data of
+        [ case model.game of
             NotAsked ->
                 viewNotReady "Initializing..."
 
@@ -1559,19 +1464,8 @@ view model =
             Failure error ->
                 viewFetchError (errorMessage error)
 
-            Success data ->
-                case model.selectedGame of
-                    Success game ->
-                        viewSelectedGame model data game
-
-                    Loading ->
-                        viewNotReady "Loading..."
-
-                    Failure error ->
-                        viewFetchError (errorMessage error)
-
-                    _ ->
-                        viewNotReady "No game selected..."
+            Success game ->
+                viewSelectedGame model game
         ]
 
 
@@ -1589,8 +1483,8 @@ viewFetchError message =
         ]
 
 
-viewSelectedGame : Model -> Data -> Game -> Html Msg
-viewSelectedGame model data game =
+viewSelectedGame : Model -> Game -> Html Msg
+viewSelectedGame model game =
     div
         [ style "min-height" "100%"
         , style "min-height" "100vh"
@@ -1602,10 +1496,10 @@ viewSelectedGame model data game =
                 [ class "row justify-content-center align-items-center" ]
                 [ case ( model.flags.endScoresEnabled, game.sides ) of
                     ( True, Just sides ) ->
-                        viewSidesWithEndScores model data game sides
+                        viewSidesWithEndScores model game sides
 
                     ( False, Just sides ) ->
-                        viewSides model data game sides
+                        viewSides model game sides
 
                     _ ->
                         text ""
@@ -1617,21 +1511,16 @@ viewSelectedGame model data game =
 viewGameMessage : Model -> Game -> Html Msg
 viewGameMessage model game =
     if game.changed then
-        case model.data of
-            Success data ->
-                case model.savedGame of
-                    Failure error ->
-                        div [ class "alert alert-danger" ] [ text (errorMessage error) ]
-
-                    _ ->
-                        if model.flags.endScoresEnabled then
-                            div [ class "alert alert-warning" ] [ text "There are unsaved changes." ]
-
-                        else
-                            text ""
+        case model.savedGame of
+            Failure error ->
+                div [ class "alert alert-danger" ] [ text (errorMessage error) ]
 
             _ ->
-                text ""
+                if model.flags.endScoresEnabled then
+                    div [ class "alert alert-warning" ] [ text "There are unsaved changes." ]
+
+                else
+                    text ""
 
     else
         case model.savedGame of
@@ -1645,8 +1534,8 @@ viewGameMessage model game =
                 text ""
 
 
-viewSides : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
-viewSides model data game sides =
+viewSides : Model -> Game -> ( Side, Side ) -> Html Msg
+viewSides model game sides =
     let
         viewSide : Side -> Html Msg
         viewSide side =
@@ -1746,8 +1635,8 @@ viewSides model data game sides =
         ]
 
 
-viewSidesWithEndScores : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
-viewSidesWithEndScores model data game sides =
+viewSidesWithEndScores : Model -> Game -> ( Side, Side ) -> Html Msg
+viewSidesWithEndScores model game sides =
     let
         { lastStoneDrawEnabled, shotByShotEnabled, mixedDoubles, rockColors } =
             model.flags
