@@ -2124,7 +2124,7 @@ viewSidesWithEndScores model data game sides =
                                 , ( "btn-outline-secondary", not side.firstHammer )
                                 , ( "btn-success", side.firstHammer )
                                 ]
-                            , onClick SwapFirstHammer
+                            , onClick (if side.firstHammer then NoOp else SwapFirstHammer)
                             ]
                             [ text "First Hammer" ]
                         , div [ class "d-flex align-items-center" ]
