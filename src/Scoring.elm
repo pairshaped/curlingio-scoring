@@ -2375,6 +2375,13 @@ viewShots sideIndex side focusedEndNumber game =
                     in
                     side.teamCurlers
                         |> List.indexedMap viewCurlerOption
+
+                saveableShot =
+                    game.changed && 
+                    shot.curlerId /= Nothing &&
+                    shot.turn /= Nothing &&
+                    shot.throw /= Nothing &&
+                    shot.rating /= Nothing
             in
             tr
                 [ class
@@ -2404,6 +2411,13 @@ viewShots sideIndex side focusedEndNumber game =
                         , value (Maybe.withDefault "" shot.turn)
                         , onInput (UpdateShotTurn side shot)
                         , tabindex startingTabIndex
+                        , onBlur
+                            (if saveableShot then
+                                SaveGame
+
+                             else
+                                NoOp
+                            )
                         ]
                         []
                     ]
@@ -2413,6 +2427,13 @@ viewShots sideIndex side focusedEndNumber game =
                         , value (Maybe.withDefault "" shot.throw)
                         , onInput (UpdateShotThrow side shot)
                         , tabindex (startingTabIndex + 1)
+                        , onBlur
+                            (if saveableShot then
+                                SaveGame
+
+                             else
+                                NoOp
+                            )
                         ]
                         []
                     ]
@@ -2422,7 +2443,7 @@ viewShots sideIndex side focusedEndNumber game =
                         , value (Maybe.withDefault "" shot.rating)
                         , onInput (UpdateShotRating side shot)
                         , onBlur
-                            (if game.changed then
+                            (if saveableShot then
                                 SaveGame
 
                              else
