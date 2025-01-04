@@ -2000,7 +2000,7 @@ viewSides model data game sides =
 viewSidesWithEndScores : Model -> Data -> Game -> ( Side, Side ) -> Html Msg
 viewSidesWithEndScores model data game sides =
     let
-        { lastStoneDrawEnabled, shotByShotEnabled, mixedDoubles, rockColors } =
+        { lastStoneDrawEnabled, shotByShotEnabled, mixedDoubles, rockColors, sheets } =
             data.settings
 
         numberOfEnds =
@@ -2268,7 +2268,15 @@ viewSidesWithEndScores model data game sides =
                             [ text
                                 (case findDraw data.draws game.drawId of
                                     Just draw ->
-                                        "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+                                        let
+                                            sheetName = 
+                                                case List.Extra.getAt game.sheet sheets of
+                                                    Just n ->
+                                                        " - " ++ n
+                                                    Nothing ->
+                                                        ""
+                                        in
+                                        "Draw " ++ draw.label ++ " - " ++ draw.startsAt ++ sheetName
 
                                     Nothing ->
                                         "Unknown Draw"
