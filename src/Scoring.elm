@@ -1965,7 +1965,16 @@ viewSides model data game sides =
                         [ text
                             (case findDraw data.draws game.drawId of
                                 Just draw ->
-                                    "Draw " ++ draw.label ++ " - " ++ draw.startsAt
+                                    let
+                                        sheetName =
+                                            case List.Extra.getAt (game.sheet - 1) data.settings.sheets of
+                                                Just n ->
+                                                    " - " ++ n
+
+                                                Nothing ->
+                                                    ""
+                                    in
+                                    "Draw " ++ draw.label ++ " - " ++ draw.startsAt ++ sheetName
 
                                 Nothing ->
                                     "Unknown Draw"
@@ -2124,7 +2133,13 @@ viewSidesWithEndScores model data game sides =
                                 , ( "btn-outline-secondary", not side.firstHammer )
                                 , ( "btn-success", side.firstHammer )
                                 ]
-                            , onClick (if side.firstHammer then NoOp else SwapFirstHammer)
+                            , onClick
+                                (if side.firstHammer then
+                                    NoOp
+
+                                 else
+                                    SwapFirstHammer
+                                )
                             ]
                             [ text "First Hammer" ]
                         , div [ class "d-flex align-items-center" ]
@@ -2269,10 +2284,11 @@ viewSidesWithEndScores model data game sides =
                                 (case findDraw data.draws game.drawId of
                                     Just draw ->
                                         let
-                                            sheetName = 
-                                                case List.Extra.getAt game.sheet sheets of
+                                            sheetName =
+                                                case List.Extra.getAt (game.sheet - 1) sheets of
                                                     Just n ->
                                                         " - " ++ n
+
                                                     Nothing ->
                                                         ""
                                         in
@@ -2377,11 +2393,15 @@ viewShots sideIndex side focusedEndNumber game =
                         |> List.indexedMap viewCurlerOption
 
                 saveableShot =
-                    game.changed && 
-                    shot.curlerId /= Nothing &&
-                    shot.turn /= Nothing &&
-                    shot.throw /= Nothing &&
-                    shot.rating /= Nothing
+                    game.changed
+                        && shot.curlerId
+                        /= Nothing
+                        && shot.turn
+                        /= Nothing
+                        && shot.throw
+                        /= Nothing
+                        && shot.rating
+                        /= Nothing
             in
             tr
                 [ class
