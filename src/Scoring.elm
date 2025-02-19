@@ -47,6 +47,7 @@ type alias Data =
 type alias Settings =
     { eventName : String
     , sheets : List String
+    , includedSheetNumbers : List Int
     , currentDrawId : Int
     , rockColors : List RockColor
     , endScoresEnabled : Bool
@@ -182,6 +183,7 @@ decodeSettings =
     Decode.succeed Settings
         |> required "event_name" string
         |> required "sheets" (list string)
+        |> optional "included_sheet_numbers" (list int) [ 1, 2, 3, 4 ]
         |> required "current_draw_id" int
         |> required "rock_colors" (list decodeRockColor)
         |> optional "end_scores_enabled" bool False
@@ -1802,7 +1804,7 @@ viewDraw data draw =
     tr [ class "m-2", class currentDrawClass ]
         (td [] [ text draw.label ]
             :: td [] [ text draw.startsAt ]
-            :: (List.range 1 (List.length data.settings.sheets)
+            :: (data.settings.includedSheetNumbers
                     |> List.map (viewDrawSheet data.games draw.id)
                )
         )
