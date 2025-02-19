@@ -2029,6 +2029,7 @@ viewSidesWithEndScores model data game sides =
                 [ classList
                     [ ( "text-center", True )
                     , ( "font-weight-bold", endNumber == game.focusedEndNumber )
+                    , ( "mark", endNumber == game.focusedEndNumber )
                     ]
                 , style "color" "#007bff"
                 ]
