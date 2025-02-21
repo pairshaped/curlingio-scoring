@@ -968,7 +968,7 @@ type Msg
     | ResetSavedGameMessage Time.Posix
     | ReloadGame
     | CloseGame
-    | SwapFirstHammer
+    | ToggleFirstHammer Side
     | UpdateSidePosition Side Int
     | UpdateSideScore Side String
     | UpdateSideTimeRemaining Side String
@@ -1137,10 +1137,17 @@ update msg model =
         CloseGame ->
             ( { model | selectedGame = NotAsked, savedGame = NotAsked }, Cmd.none )
 
-        SwapFirstHammer ->
+        ToggleFirstHammer side ->
             let
-                updatedSide side =
-                    { side | firstHammer = not side.firstHammer }
+                updatedSide side_ =
+                    if side_.id == side.id then
+                        { side_ | firstHammer = not side.firstHammer }
+
+                    else if not side.firstHammer then
+                        { side_ | firstHammer = False }
+
+                    else
+                        side_
 
                 updatedGame game =
                     case game.sides of
@@ -2136,13 +2143,7 @@ viewSidesWithEndScores model data game sides =
                                 , ( "btn-outline-secondary", not side.firstHammer )
                                 , ( "btn-success", side.firstHammer )
                                 ]
-                            , onClick
-                                (if side.firstHammer then
-                                    NoOp
-
-                                 else
-                                    SwapFirstHammer
-                                )
+                            , onClick (ToggleFirstHammer side)
                             ]
                             [ text "First Hammer" ]
                         , div [ class "d-flex align-items-center" ]
