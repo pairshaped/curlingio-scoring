@@ -65,6 +65,19 @@
         // flags: { baseUrl: "http://demo.curling.test:3000/en/admin/events/3743" }
       }
     )
+
+    scoring.ports.sendMessage.subscribe(function(msg) {
+      if (msg == "focusNext" && document.activeElement) {
+        let i = document.activeElement.tabIndex
+        if (i >= 0) {
+          let iNext = document.querySelectorAll("[tabindex='"+(i+1)+"']")
+          if (iNext.length > 0) {
+            let elNext = iNext[0].getAttribute('id')
+            document.getElementById(elNext).focus()
+          }
+        }
+      }
+    })
   </script>
 </body>
 </html>

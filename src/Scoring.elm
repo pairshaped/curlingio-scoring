@@ -1,4 +1,4 @@
-module Scoring exposing (..)
+port module Scoring exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h3, h5, h6, hr, input, label, option, p, select, span, table, tbody, td, text, th, thead, tr)
@@ -1473,7 +1473,7 @@ update msg model =
 
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
 
         UpdateFocusedEndNumber endNumber ->
             let
@@ -1546,11 +1546,14 @@ update msg model =
                                 String.toUpper val
 
                             validated =
-                                if List.member formattedVal validShotTurns then
+                                if val == "" then
+                                    Nothing
+
+                                else if List.member formattedVal validShotTurns then
                                     Just formattedVal
 
                                 else
-                                    Nothing
+                                    shot.turn
                         in
                         { shot | turn = validated }
 
@@ -1582,7 +1585,7 @@ update msg model =
                         _ ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
 
         UpdateShotThrow forSide forShot val ->
             let
@@ -1593,11 +1596,14 @@ update msg model =
                                 String.toUpper val
 
                             validated =
-                                if List.member formattedVal validShotThrows then
+                                if val == "" then
+                                    Nothing
+
+                                else if List.member formattedVal validShotThrows then
                                     Just formattedVal
 
                                 else
-                                    Nothing
+                                    shot.throw
                         in
                         { shot | throw = validated }
 
@@ -1629,7 +1635,7 @@ update msg model =
                         _ ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
 
         UpdateShotRating forSide forShot val ->
             let
@@ -1641,11 +1647,14 @@ update msg model =
                                 String.toUpper val
 
                             validated =
-                                if List.member formattedVal validShotRatings then
+                                if val == "" then
+                                    Nothing
+
+                                else if List.member formattedVal validShotRatings then
                                     Just formattedVal
 
                                 else
-                                    Nothing
+                                    shot.rating
                         in
                         { shot | rating = validated }
 
@@ -1677,7 +1686,7 @@ update msg model =
                         _ ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, Cmd.none )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
 
 
 
@@ -2069,6 +2078,7 @@ viewSidesWithEndScores model data game sides =
                         [ input
                             [ class "form-control"
                             , style "width" "36px"
+                            , id ("tab" ++ String.fromInt onTabIndex)
                             , tabindex onTabIndex
                             , value
                                 (case List.Extra.getAt (endNumber - 1) side.endScores of
@@ -2425,6 +2435,7 @@ viewShots sideIndex side focusedEndNumber game =
                     [ select
                         [ class "shot-curler mr-1 form-control"
                         , onInput (UpdateShotCurlerId side shot)
+                        , id ("tab" ++ String.fromInt (startingTabIndex + 9000))
                         , tabindex (startingTabIndex + 9000)
                         ]
                         (viewCurlerOptions (Maybe.withDefault -1 shot.curlerId))
@@ -2434,6 +2445,7 @@ viewShots sideIndex side focusedEndNumber game =
                         [ class "shot-turn mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.turn)
                         , onInput (UpdateShotTurn side shot)
+                        , id ("tab" ++ String.fromInt startingTabIndex)
                         , tabindex startingTabIndex
                         , onBlur
                             (if saveableShot then
@@ -2450,6 +2462,7 @@ viewShots sideIndex side focusedEndNumber game =
                         [ class "shot-throw mr-1 text-center form-control"
                         , value (Maybe.withDefault "" shot.throw)
                         , onInput (UpdateShotThrow side shot)
+                        , id ("tab" ++ String.fromInt (startingTabIndex + 1))
                         , tabindex (startingTabIndex + 1)
                         , onBlur
                             (if saveableShot then
@@ -2473,6 +2486,7 @@ viewShots sideIndex side focusedEndNumber game =
                              else
                                 NoOp
                             )
+                        , id ("tab" ++ String.fromInt (startingTabIndex + 2))
                         , tabindex (startingTabIndex + 2)
                         ]
                         []
@@ -2516,6 +2530,13 @@ viewShots sideIndex side focusedEndNumber game =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
+
+
+
+-- PORTS
+
+
+port sendMessage : String -> Cmd msg
 
 
 
