@@ -964,6 +964,7 @@ type Msg
     | SelectGame Game
     | GotGame (WebData Game)
     | SaveGame
+    | AutoSaveGame
     | PatchedGame (WebData Game)
     | ResetSavedGameMessage Time.Posix
     | ReloadGame
@@ -1050,6 +1051,9 @@ update msg model =
                 , Task.perform ResetSavedGameMessage (Process.sleep 6000 |> Task.andThen (\_ -> Time.now))
                 ]
             )
+
+        AutoSaveGame ->
+            update SaveGame model
 
         PatchedGame response ->
             let
@@ -2447,13 +2451,6 @@ viewShots sideIndex side focusedEndNumber game =
                         , onInput (UpdateShotTurn side shot)
                         , id ("tab" ++ String.fromInt startingTabIndex)
                         , tabindex startingTabIndex
-                        , onBlur
-                            (if saveableShot then
-                                SaveGame
-
-                             else
-                                NoOp
-                            )
                         ]
                         []
                     ]
@@ -2464,13 +2461,6 @@ viewShots sideIndex side focusedEndNumber game =
                         , onInput (UpdateShotThrow side shot)
                         , id ("tab" ++ String.fromInt (startingTabIndex + 1))
                         , tabindex (startingTabIndex + 1)
-                        , onBlur
-                            (if saveableShot then
-                                SaveGame
-
-                             else
-                                NoOp
-                            )
                         ]
                         []
                     ]
@@ -2481,7 +2471,7 @@ viewShots sideIndex side focusedEndNumber game =
                         , onInput (UpdateShotRating side shot)
                         , onBlur
                             (if saveableShot then
-                                SaveGame
+                                AutoSaveGame
 
                              else
                                 NoOp
