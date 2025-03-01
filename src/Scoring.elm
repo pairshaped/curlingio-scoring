@@ -964,7 +964,6 @@ type Msg
     | SelectGame Game
     | GotGame (WebData Game)
     | SaveGame
-    | AutoSaveGame
     | PatchedGame (WebData Game)
     | ResetSavedGameMessage Time.Posix
     | ReloadGame
@@ -1051,9 +1050,6 @@ update msg model =
                 , Task.perform ResetSavedGameMessage (Process.sleep 6000 |> Task.andThen (\_ -> Time.now))
                 ]
             )
-
-        AutoSaveGame ->
-            update SaveGame model
 
         PatchedGame response ->
             let
@@ -1478,11 +1474,17 @@ update msg model =
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
-            , if newScoreStr /= "" && String.toUpper newScoreStr /= "X" then
-                sendMessage "focusNext"
+            , case model.data of
+                Success data ->
+                    -- Don't autotab end scores if the event is using shot by shot, or nothing was entered, or the value was deleted.
+                    if not data.settings.shotByShotEnabled && newScoreStr /= "" && String.toUpper newScoreStr /= "X" then
+                        sendMessage "focusNext"
 
-              else
-                Cmd.none
+                    else
+                        Cmd.none
+
+                _ ->
+                    Cmd.none
             )
 
         UpdateFocusedEndNumber endNumber ->
@@ -2078,7 +2080,7 @@ viewSidesWithEndScores model data game sides =
                         hasHammer =
                             Maybe.withDefault False (hasHammerInEnd mixedDoubles side sides (endNumber - 1))
 
-                        saveableEnds =
+                        autosaveEnd =
                             let
                                 hasScoreForEnd =
                                     let
@@ -2130,8 +2132,8 @@ viewSidesWithEndScores model data game sides =
                             , onInput (UpdateSideEndScore side (endNumber - 1))
                             , onFocus (UpdateFocusedEndNumber endNumber)
                             , onBlur
-                                (if saveableEnds then
-                                    AutoSaveGame
+                                (if autosaveEnd then
+                                    SaveGame
 
                                  else
                                     NoOp
@@ -2508,7 +2510,7 @@ viewShots sideIndex side focusedEndNumber game =
                         , onInput (UpdateShotRating side shot)
                         , onBlur
                             (if saveableShot then
-                                AutoSaveGame
+                                SaveGame
 
                              else
                                 NoOp
