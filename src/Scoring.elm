@@ -1477,15 +1477,16 @@ update msg model =
               else
                 case model.data of
                     Success data ->
-                        if not data.settings.shotByShotEnabled then
-                            -- Autotab if it's not a shot by shot game
+                        -- Autosave
+                        if data.settings.shotByShotEnabled then
+                            run (AutoSaveEnd endIndex)
+
+                        else
+                            -- Also, autotab if it's not a shot by shot game
                             Cmd.batch
                                 [ run (AutoSaveEnd endIndex)
                                 , sendMessage "focusNext"
                                 ]
-
-                        else
-                            run (AutoSaveEnd endIndex)
 
                     _ ->
                         Cmd.none
