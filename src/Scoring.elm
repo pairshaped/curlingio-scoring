@@ -1477,7 +1477,13 @@ update msg model =
 
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            , if newScoreStr /= "" && String.toUpper newScoreStr /= "X" then
+                sendMessage "focusNext"
+
+              else
+                Cmd.none
+            )
 
         UpdateFocusedEndNumber endNumber ->
             let
@@ -2071,6 +2077,30 @@ viewSidesWithEndScores model data game sides =
 
                         hasHammer =
                             Maybe.withDefault False (hasHammerInEnd mixedDoubles side sides (endNumber - 1))
+
+                        saveableEnds =
+                            let
+                                hasScoreForEnd =
+                                    let
+                                        ( sideA, sideB ) =
+                                            sides
+                                    in
+                                    case ( List.Extra.getAt (endNumber - 1) sideA.endScores, List.Extra.getAt (endNumber - 1) sideB.endScores ) of
+                                        ( Just val, Just otherVal ) ->
+                                            case ( val, otherVal ) of
+                                                ( Just v, Just otherV ) ->
+                                                    v >= 0 && otherV >= 0
+
+                                                ( Nothing, Nothing ) ->
+                                                    True
+
+                                                _ ->
+                                                    False
+
+                                        _ ->
+                                            False
+                            in
+                            game.changed && hasScoreForEnd
                     in
                     td
                         [ classList
@@ -2099,6 +2129,13 @@ viewSidesWithEndScores model data game sides =
                                 )
                             , onInput (UpdateSideEndScore side (endNumber - 1))
                             , onFocus (UpdateFocusedEndNumber endNumber)
+                            , onBlur
+                                (if saveableEnds then
+                                    AutoSaveGame
+
+                                 else
+                                    NoOp
+                                )
                             ]
                             []
                         ]
