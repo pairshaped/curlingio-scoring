@@ -502,8 +502,8 @@ init flags =
     )
 
 
-sendMsg : msg -> Cmd msg
-sendMsg msg =
+run : msg -> Cmd msg
+run msg =
     Task.succeed msg
         |> Task.perform identity
 
@@ -946,11 +946,6 @@ withInitializedShots shotByShotEnabled mixedDoubles ( top, bot ) =
         ( updatedSide top, updatedSide bot )
 
 
-run : msg -> Cmd msg
-run m =
-    Task.perform (always m) (Task.succeed ())
-
-
 
 -- UPDATE
 
@@ -964,6 +959,7 @@ type Msg
     | SelectGame Game
     | GotGame (WebData Game)
     | SaveGame
+    | AutoSaveEnd Int
     | PatchedGame (WebData Game)
     | ResetSavedGameMessage Time.Posix
     | ReloadGame
@@ -1116,7 +1112,7 @@ update msg model =
                         Cmd.none
 
                     else
-                        sendMsg CloseGame
+                        run CloseGame
 
                 _ ->
                     Cmd.none
@@ -1474,18 +1470,64 @@ update msg model =
                 -- TODO: If there is no game result, but all ends have been scored, automatically set / updated the game state.
             in
             ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
-            , case model.data of
-                Success data ->
-                    -- Don't autotab end scores if the event is using shot by shot, or nothing was entered, or the value was deleted.
-                    if not data.settings.shotByShotEnabled && newScoreStr /= "" && String.toUpper newScoreStr /= "X" then
-                        sendMessage "focusNext"
+            , if newScoreStr == "" || String.contains "X" (String.toUpper newScoreStr) then
+                -- Don't autosave or autotab
+                Cmd.none
 
-                    else
+              else
+                case model.data of
+                    Success data ->
+                        if not data.settings.shotByShotEnabled then
+                            -- Autotab if it's not a shot by shot game
+                            Cmd.batch
+                                [ run (AutoSaveEnd endIndex)
+                                , sendMessage "focusNext"
+                                ]
+
+                        else
+                            run (AutoSaveEnd endIndex)
+
+                    _ ->
                         Cmd.none
-
-                _ ->
-                    Cmd.none
             )
+
+        AutoSaveEnd endIndex ->
+            let
+                shouldSave =
+                    let
+                        hasScoreForEnd game =
+                            case game.sides of
+                                Just ( sideA, sideB ) ->
+                                    case ( List.Extra.getAt endIndex sideA.endScores, List.Extra.getAt endIndex sideB.endScores ) of
+                                        ( Just val, Just otherVal ) ->
+                                            case ( val, otherVal ) of
+                                                ( Just v, Just otherV ) ->
+                                                    v >= 0 && otherV >= 0
+
+                                                ( Nothing, Nothing ) ->
+                                                    True
+
+                                                _ ->
+                                                    False
+
+                                        _ ->
+                                            False
+
+                                _ ->
+                                    False
+                    in
+                    case model.selectedGame of
+                        Success game ->
+                            game.changed && hasScoreForEnd game
+
+                        _ ->
+                            False
+            in
+            if shouldSave then
+                update SaveGame model
+
+            else
+                ( model, Cmd.none )
 
         UpdateFocusedEndNumber endNumber ->
             let
@@ -2079,30 +2121,6 @@ viewSidesWithEndScores model data game sides =
 
                         hasHammer =
                             Maybe.withDefault False (hasHammerInEnd mixedDoubles side sides (endNumber - 1))
-
-                        autosaveEnd =
-                            let
-                                hasScoreForEnd =
-                                    let
-                                        ( sideA, sideB ) =
-                                            sides
-                                    in
-                                    case ( List.Extra.getAt (endNumber - 1) sideA.endScores, List.Extra.getAt (endNumber - 1) sideB.endScores ) of
-                                        ( Just val, Just otherVal ) ->
-                                            case ( val, otherVal ) of
-                                                ( Just v, Just otherV ) ->
-                                                    v >= 0 && otherV >= 0
-
-                                                ( Nothing, Nothing ) ->
-                                                    True
-
-                                                _ ->
-                                                    False
-
-                                        _ ->
-                                            False
-                            in
-                            game.changed && hasScoreForEnd
                     in
                     td
                         [ classList
@@ -2131,13 +2149,6 @@ viewSidesWithEndScores model data game sides =
                                 )
                             , onInput (UpdateSideEndScore side (endNumber - 1))
                             , onFocus (UpdateFocusedEndNumber endNumber)
-                            , onBlur
-                                (if autosaveEnd then
-                                    SaveGame
-
-                                 else
-                                    NoOp
-                                )
                             ]
                             []
                         ]
