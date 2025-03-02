@@ -414,7 +414,7 @@ encodeSide side =
 
 encodeShot : Shot -> Encode.Value
 encodeShot shot =
-    if shot.turn == Nothing && shot.throw == Nothing && shot.rating == Nothing then
+    if shot.curlerId == Nothing && shot.turn == Nothing && shot.throw == Nothing && shot.rating == Nothing then
         -- Shots are stored as JSON in the database, so null values are unecessary (the entire field is overwritten on save).
         -- Therefore, we can save a ton of bandwidth for the public widgets by not saving shots where nothing has been recorded.
         -- The shot data will gradually increase as more games complete, but we'll never store shots for forfeits beyond the ends that were played.
@@ -2113,7 +2113,8 @@ viewSidesWithEndScores model data game sides =
                 viewEndForSide endNumber =
                     let
                         onTabIndex =
-                            -- If shto by shot is enabled, ends past the currently focused end will need to account for all of the shot by shot tabs (16 * 4)
+                            -- If shot by shot is enabled, ends past the currently focused
+                            -- end will need to account for all of the shot by shot tabs (16 * 4)
                             if shotByShotEnabled && game.focusedEndNumber < endNumber then
                                 ((sideIndex + endNumber) * 2) - sideIndex - 1 + (16 * 4)
 
@@ -2451,7 +2452,8 @@ viewShots sideIndex side focusedEndNumber game =
                                 isSelected =
                                     selectedCurlerId == teamCurler.curlerId
                             in
-                            -- For some reason, in order to reflect which curler is selected in shots data we need to force a second render on end number focus change.
+                            -- For some reason, in order to reflect which curler is selected in
+                            -- shots data we need to force a second render on end number focus change.
                             option
                                 [ selected isSelected
                                 , value (String.fromInt teamCurler.curlerId)
