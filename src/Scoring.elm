@@ -1594,17 +1594,20 @@ update msg model =
 
         UpdateShotTurn forSide forShot val ->
             let
+                formattedVal =
+                    String.toUpper val
+
+                validShotTurn =
+                    List.member formattedVal validShotTurns
+
                 updatedShot shot =
                     if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
                         let
-                            formattedVal =
-                                String.toUpper val
-
                             validated =
                                 if val == "" then
                                     Nothing
 
-                                else if List.member formattedVal validShotTurns then
+                                else if validShotTurn then
                                     Just formattedVal
 
                                 else
@@ -1640,21 +1643,30 @@ update msg model =
                         _ ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            , if validShotTurn then
+                sendMessage "focusNext"
+
+              else
+                Cmd.none
+            )
 
         UpdateShotThrow forSide forShot val ->
             let
+                formattedVal =
+                    String.toUpper val
+
+                validShotThrow =
+                    List.member formattedVal validShotThrows
+
                 updatedShot shot =
                     if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
                         let
-                            formattedVal =
-                                String.toUpper val
-
                             validated =
                                 if val == "" then
                                     Nothing
 
-                                else if List.member formattedVal validShotThrows then
+                                else if validShotThrow then
                                     Just formattedVal
 
                                 else
@@ -1690,22 +1702,30 @@ update msg model =
                         _ ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            , if validShotThrow then
+                sendMessage "focusNext"
+
+              else
+                Cmd.none
+            )
 
         UpdateShotRating forSide forShot val ->
             let
+                formattedVal =
+                    String.toUpper val
+
+                validShotRating =
+                    List.member formattedVal validShotRatings
+
                 updatedShot shot =
-                    -- TODO
                     if shot.endNumber == forShot.endNumber && shot.shotNumber == forShot.shotNumber then
                         let
-                            formattedVal =
-                                String.toUpper val
-
                             validated =
                                 if val == "" then
                                     Nothing
 
-                                else if List.member formattedVal validShotRatings then
+                                else if validShotRating then
                                     Just formattedVal
 
                                 else
@@ -1741,7 +1761,13 @@ update msg model =
                         _ ->
                             game
             in
-            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }, sendMessage "focusNext" )
+            ( { model | selectedGame = RemoteData.map updatedGame model.selectedGame }
+            , if validShotRating then
+                sendMessage "focusNext"
+
+              else
+                Cmd.none
+            )
 
 
 
